@@ -878,8 +878,8 @@ private fun RepoLinksContent(
             item {
                 RepoLinkItem(
                     title = stringResource(R.string.android_client_original),
-                    subtitle = "samosvalishe/turn-proxy-android",
-                    url = "https://github.com/samosvalishe/turn-proxy-android",
+                    subtitle = "hackdiaz-dev/turn-proxy-android",
+                    url = "https://github.com/hackdiaz-dev/turn-proxy-android",
                     containerColor = containerColor,
                     onHaptic = { HapticUtil.perform(context, HapticUtil.Pattern.SELECTION) },
                     onOpen = { uriHandler.openUri(it) }
@@ -900,8 +900,8 @@ private fun RepoLinksContent(
             item {
                 RepoLinkItem(
                     title = stringResource(R.string.freeturn_core),
-                    subtitle = "samosvalishe/free-turn-proxy",
-                    url = "https://github.com/samosvalishe/free-turn-proxy",
+                    subtitle = "hackdiaz-dev/free-turn-proxy",
+                    url = "https://github.com/hackdiaz-dev/free-turn-proxy",
                     containerColor = containerColor,
                     onHaptic = { HapticUtil.perform(context, HapticUtil.Pattern.SELECTION) },
                     onOpen = { uriHandler.openUri(it) }

@@ -4,7 +4,7 @@
 
 # WireTurn — Android WebRTC & WebDAV Tunnel
 
-Android-клиент для [Turnable](https://github.com/TheAirBlow/Turnable), [olcRTC](https://github.com/openlibrecommunity/olcrtc), [WebDAV](https://github.com/spkprsnts/webdav-tunnel), [FreeTurn](https://github.com/samosvalishe/free-turn-proxy), [qWDTT](https://github.com/SpaceNeuroX/proxy-turn-vk-android), [OpenFlux](https://github.com/p1neappleXpress/OpenFlux) и [CSQTT](https://github.com/amurcanov/csqtt) — туннелирование трафика через WebRTC и WebDAV.
+Android-клиент для [Turnable](https://github.com/TheAirBlow/Turnable), [olcRTC](https://github.com/openlibrecommunity/olcrtc), [WebDAV](https://github.com/spkprsnts/webdav-tunnel), [FreeTurn](https://github.com/hackdiaz-dev/free-turn-proxy), [qWDTT](https://github.com/SpaceNeuroX/proxy-turn-vk-android), [OpenFlux](https://github.com/p1neappleXpress/OpenFlux) и [CSQTT](https://github.com/amurcanov/csqtt) — туннелирование трафика через WebRTC и WebDAV.
 
 > **Disclaimer:** Проект предназначен исключительно для образовательных и исследовательских целей.
 
@@ -81,7 +81,7 @@ WireTurn упаковывает трафик в стандартные прот�
 - `libturnable.so` — [TheAirBlow/Turnable](https://github.com/TheAirBlow/Turnable)
 - `libolcrtc.so` — [openlibrecommunity/olcrtc](https://github.com/openlibrecommunity/olcrtc)
 - `libwebdav.so` — [spkprsnts/webdav-tunnel](https://github.com/spkprsnts/webdav-tunnel)
-- `libfreeturn.so` — [samosvalishe/free-turn-proxy](https://github.com/samosvalishe/free-turn-proxy)
+- `libfreeturn.so` — [hackdiaz-dev/free-turn-proxy](https://github.com/hackdiaz-dev/free-turn-proxy)
 - `libqwdtt.so` — [SpaceNeuroX/proxy-turn-vk-android](https://github.com/SpaceNeuroX/proxy-turn-vk-android) (`go_client`)
 - `libopenflux.so` — [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux)
 - `libcsqtt.so` — [amurcanov/csqtt](https://github.com/amurcanov/csqtt) (`rust-client`)
@@ -111,8 +111,8 @@ git clone --recursive https://github.com/spkprsnts/WireTurn.git
 - [TheAirBlow/Turnable](https://github.com/TheAirBlow/Turnable) — проект Turnable.
 - [openlibrecommunity/olcrtc](https://github.com/openlibrecommunity/olcrtc) — проект olcRTC.
 - [spkprsnts/webdav-tunnel](https://github.com/spkprsnts/webdav-tunnel) — проект WebDAV Tunnel.
-- [samosvalishe/free-turn-proxy](https://github.com/samosvalishe/free-turn-proxy) — проект FreeTurn.
-- [samosvalishe/turn-proxy-android](https://github.com/samosvalishe/turn-proxy-android) — база UI и логики.
+- [hackdiaz-dev/free-turn-proxy](https://github.com/hackdiaz-dev/free-turn-proxy) — проект FreeTurn.
+- [hackdiaz-dev/turn-proxy-android](https://github.com/hackdiaz-dev/turn-proxy-android) — база UI и логики.
 - [SpaceNeuroX/proxy-turn-vk-android](https://github.com/SpaceNeuroX/proxy-turn-vk-android) — проект qWDTT.
 - [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) — проект OpenFlux.
 - [amurcanov/csqtt](https://github.com/amurcanov/csqtt) — проект CSQTT (лицензия PolyForm Noncommercial 1.0.0, только некоммерческое использование).
