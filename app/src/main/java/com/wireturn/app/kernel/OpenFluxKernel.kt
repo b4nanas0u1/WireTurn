@@ -75,6 +75,8 @@ object OpenFluxKernel : Kernel {
         // Boards (transport/yandex/boards.go): every received packet, and the drop-objects
         // that clears each received batch off the board again.
         "[BOARDS<-] ", "[BOARDS] dropped ",
+        // Telemost's striped link (transport/striped.go): one line per resent piece.
+        "[STRIPE] seq ",
         "[BATCH] Send: enqueued", "[BATCH] Recv: ", "[BATCH] flushLoop: ",
         "[CRYPTO] Send #", "[CRYPTO] Recv #", "[CRYPTO] Recv raw ", "[CRYPTO] Recv DECRYPT FAIL", "[CRYPTO] Recv DROP",
         "[SESSION] send IPv4 #", "[SESSION] recv IPv4 #", "[SESSION] recv from "
@@ -93,7 +95,7 @@ object OpenFluxKernel : Kernel {
     // captcha solver, and main.go's fatal for a synchronous Start() failure) - as opposed to the
     // SOCKS5 inbound's per-connection lines, see parseLogLine point 0d.
     private val TRANSPORT_LOG_MARKERS = listOf(
-        "[ydocs]", "[volga]", "[boards]", "[m-docs]", "[captcha]", "failed to start transport", STREAM_START_FAILED
+        "[ydocs]", "[volga]", "[boards]", "[m-docs]", "[telemost]", "[captcha]", "failed to start transport", STREAM_START_FAILED
     )
 
     // Stream mode's own fatal for a carrier that didn't start (main.go runStreamClient:
@@ -117,7 +119,7 @@ object OpenFluxKernel : Kernel {
     private class FastFailRule(val transports: Set<String>, val messageRes: Int, val matcher: (String) -> Boolean)
 
     // Declared before FAST_FAIL_RULES: object properties initialize in declaration order.
-    private val ALL_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "oneme")
+    private val ALL_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "oneme", "telemost")
 
     private val FAST_FAIL_RULES = listOf(
         // 0a. Volga auth failure (transport/yandex/vyandex.go): "action_url missing" means the
@@ -177,6 +179,11 @@ object OpenFluxKernel : Kernel {
         FastFailRule(setOf("cupsonline"), R.string.error_openflux_cups_rooms_gone) {
             "all rooms are gone" in it
         },
+        // 0j. Telemost's own connection-info call (transport/yandex/telemost.go) answering 404: the
+        // conference link names no conference (mistyped, or it was ended) - Start() fails with it.
+        FastFailRule(setOf("telemost"), R.string.error_openflux_telemost_not_found) {
+            "api returned status 404" in it
+        },
         // 0i. Since 0.2.0 a keyed profile tries its alternate KDF contexts before giving up, and
         // then says so in one line ("... failed authentication under all N KDF contexts tried ...:
         // the encryption key differs from the peer's") - no retry makes the keys agree.
@@ -217,6 +224,7 @@ object OpenFluxKernel : Kernel {
         "cupsonline" -> R.drawable.ic_cupsonline
         "mailru" -> R.drawable.ic_mailru
         "boards" -> R.drawable.ic_yandex_boards
+        "telemost" -> R.drawable.ic_telemost
         else -> R.drawable.route_24px
     }
 
@@ -399,7 +407,9 @@ object OpenFluxKernel : Kernel {
                 if (CoreServiceState.status.value !is CoreStatus.Connected && canUpdateConnectingStatus()) {
                     markConnecting()
                 }
-            } else if (transport != "oneme" && transport != "cupsonline" && CoreServiceState.status.value !is CoreStatus.Suppressed) {
+            } else if (transport != "oneme" && transport != "cupsonline" && transport != "telemost" &&
+                CoreServiceState.status.value !is CoreStatus.Suppressed
+            ) {
                 CoreServiceState.setStatus(CoreStatus.Connected)
                 ctx.updateNotification(ctx.getString(R.string.core_active))
             } else if (transport != "cupsonline" && canUpdateConnectingStatus()) {
@@ -658,6 +668,27 @@ object OpenFluxKernel : Kernel {
                     }
                 }
                 state.startupEmitted = true
+            }
+        }
+
+        // 8. Telemost (transport/yandex/telemost*.go): Start() only joins the conference, so
+        // "Running as CLIENT" (point 3) leaves it Connecting. The definite signal is a lane of
+        // ours pairing with one of the exit's ("[Telemost] lane N -> watching <peer>", Infof) - the
+        // exit's participants are there and its video is what this lane now reads. A WebSocket
+        // drop reconnects on its own; offline is the only thing worth reacting to, the
+        // connecting watchdog covers an exit that never shows up.
+        if (transport == "telemost") {
+            if (lower.contains("[telemost] lane ") && lower.contains(" -> watching ")) {
+                if (CoreServiceState.status.value !is CoreStatus.Suppressed) {
+                    CoreServiceState.setStatus(CoreStatus.Connected)
+                    ctx.updateNotification(ctx.getString(R.string.core_active))
+                }
+                state.startupEmitted = true
+            } else if (lower.contains("[telemost] ws dial failed") || lower.contains("[telemost] read error")) {
+                if (ctx.isNetworkMissingAndHandled()) {
+                    state.startupFailed = true
+                    return true
+                }
             }
         }
 

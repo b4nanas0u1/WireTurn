@@ -205,6 +205,9 @@
     <string name="openflux_url_desc">Yandex.Docs document URL shared with the exit node</string>
     <string name="openflux_mailru_url_desc">Mail.ru Docs public document URL shared with the exit node</string>
     <string name="openflux_boards_url_desc">Yandex Boards board link (with ?hash=) shared with the exit node</string>
+    <string name="openflux_telemost_settings_title">Yandex Telemost</string>
+    <string name="openflux_telemost_url_label">Conference link</string>
+    <string name="openflux_telemost_url_desc">Telemost conference link shared with the exit node</string>
     <string name="openflux_cups_url_label">Room list</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport cupsonline)</string>
     <string name="openflux_cups_room_label">Room</string>
@@ -560,6 +563,7 @@
     <string name="error_openflux_vyandex_wrong_doc">Document doesn\'t support Volga — switch to the yandex transport</string>
     <string name="error_openflux_yandex_wrong_doc">Document only works with the Volga (vyandex) transport</string>
     <string name="error_openflux_doc_not_found">Document not found</string>
+    <string name="error_openflux_telemost_not_found">Telemost conference not found</string>
     <string name="error_openflux_yandex_captcha">Yandex requires a captcha</string>
     <string name="error_openflux_yandex_login">Document requires a Yandex login</string>
     <string name="error_openflux_cups_rooms_gone">Cups rooms are closed, recreate them on the exit node</string>

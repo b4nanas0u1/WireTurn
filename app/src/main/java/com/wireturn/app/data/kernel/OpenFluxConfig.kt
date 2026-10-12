@@ -24,7 +24,9 @@ data class OpenFluxConfig(
     // list the exit node prints at startup, not a document link) or "mailru" (Mail.ru Docs
     // cursor-message transport, same idea as classic yandex but riding a public cloud.mail.ru
     // document instead - `url` holds that document's weblink) or "boards" (Yandex Boards
-    // whiteboard transport, `url` holds the board link with its ?hash=) - the exact values
+    // whiteboard transport, `url` holds the board link with its ?hash=) or "telemost" (Yandex
+    // Telemost conference, the tunnel striped over several participants' video, `url` holds the
+    // conference link; experimental, exit nodes need node-v1.3.0+) - the exact values
     // OpenFlux's own `-transport` flag accepts (the CLI arg is literally "oneme", not "max").
     @SerializedName("transport") val transport: String = "yandex",
     // Yandex.Docs/Mail.ru document URL for yandex/vyandex/mailru; base64 room list for cupsonline.
@@ -63,6 +65,7 @@ data class OpenFluxConfig(
             "cupsonline" -> "Cups.online"
             "mailru" -> "Mail.ru Docs"
             "boards" -> "Y.Boards"
+            "telemost" -> "Telemost"
             else -> "Y.Docs"
         }
 
@@ -81,6 +84,7 @@ data class OpenFluxConfig(
             "cupsonline" -> "cupsonline"
             "mailru" -> "mailru"
             "boards" -> "boards"
+            "telemost" -> "telemost"
             else -> "yandex"
         },
         url = (url as Any?)?.toString()?.trim()?.take(2000) ?: "",
@@ -178,7 +182,7 @@ data class OpenFluxConfig(
         // share.go's maxPayload: bounds the inflated JSON against a crafted link.
         private const val V1_MAX_PAYLOAD = 16 shl 10
 
-        private val V1_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline")
+        private val V1_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "telemost")
 
         // share.ModeStream and the carriers a stream-mode exit speaks (share.go's streamTypes).
         const val MODE_STREAM = "stream"
@@ -280,6 +284,7 @@ data class OpenFluxConfig(
                 "cupsonline" -> "cupsonline"
                 "mailru" -> "mailru"
                 "boards" -> "boards"
+                "telemost" -> "telemost"
                 else -> "yandex"
             }
             val encryptionKey = uri.getQueryParameter("enc") ?: current.encryptionKey
