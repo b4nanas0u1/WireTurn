@@ -133,8 +133,10 @@ object PaperFluxKernel : Kernel {
 
         // 3. Authenticated with the exit: in TUN mode the core opens its descriptor socket right
         // after this - the VPN can be built and handed over now. Earlier, its handover would give
-        // up while the core is still authenticating.
-        if (line.contains("[PAPERFLUX] TRANSPORT_AUTH_OK")) {
+        // up while the core is still authenticating. Only this one of the TRANSPORT_AUTH_OK lines:
+        // the later "encrypted Session data carrier ready" comes once it took the descriptor and
+        // stopped listening, so a second handover would only fail.
+        if (line.contains("[PAPERFLUX] TRANSPORT_AUTH_OK") && line.contains("waiting for TUN descriptor")) {
             ctx.onNativeTunConfig(o.clientIp, TUN_DNS, TUN_MTU)
         }
 
