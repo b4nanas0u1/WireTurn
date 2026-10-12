@@ -438,6 +438,9 @@
     <string name="log_core_network_change">* [Core] СМЕНА СЕТИ (%1$s → %2$s) — ПЕРЕЗАПУСК</string>
     <string name="log_core_default_network">* [Core] Основная сеть: %1$s</string>
     <string name="log_core_network_changed">* [Core] Смена сети: %1$s → %2$s</string>
+    <string name="log_core_network_reconnect">* [Core] ПЕРЕПОДКЛЮЧЕНИЕ К СЕТИ (%1$s) — ПЕРЕЗАПУСК</string>
+    <string name="log_core_network_reconnected">* [Core] Переподключение к сети: %1$s</string>
+    <string name="network_sim_slot">SIM %1$d</string>
     <string name="log_core_connection_timeout">* [Core] ТАЙМАУТ ПОДКЛЮЧЕНИЯ (2м) — ПЕРЕЗАПУСК</string>
     <string name="log_core_no_network_waiting">* [Core] НЕТ СЕТИ — ОЖИДАНИЕ</string>
     <string name="log_core_stop_ui">* [Core] ОСТАНОВКА</string>

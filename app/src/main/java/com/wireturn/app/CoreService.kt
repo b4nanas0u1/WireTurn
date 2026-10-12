@@ -1428,11 +1428,20 @@ class CoreService : Service() {
             val restart = CoreServiceState.status.value !is CoreStatus.Suppressed &&
                 process.get() != null &&
                 AppPreferences(applicationContext).restartOnNetworkChangeFlow.first()
+            // Same label both ends: Android brought the same network (type, SIM) up anew - say
+            // so rather than "X → X".
+            val reconnect = from == to
             if (!restart) {
-                AppLogsState.addLog(getString(R.string.log_core_network_changed, from, to))
+                AppLogsState.addLog(
+                    if (reconnect) getString(R.string.log_core_network_reconnected, to)
+                    else getString(R.string.log_core_network_changed, from, to)
+                )
                 return@launch
             }
-            AppLogsState.addLog(getString(R.string.log_core_network_change, from, to))
+            AppLogsState.addLog(
+                if (reconnect) getString(R.string.log_core_network_reconnect, to)
+                else getString(R.string.log_core_network_change, from, to)
+            )
             updateNotification(getString(R.string.notification_network_change))
             restartCount = 0
             plannedRestart.set(true)
@@ -1451,15 +1460,32 @@ class CoreService : Service() {
         return validated + transport
     }
 
-    private fun networkLabel(capabilities: NetworkCapabilities?): String = getString(
-        when {
-            capabilities == null -> R.string.local_address_other
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> R.string.local_address_wifi
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> R.string.local_address_mobile
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> R.string.local_address_ethernet
-            else -> R.string.local_address_other
-        }
-    )
+    // The network's type - and for cellular, which SIM and operator: since Android 11 the network
+    // names its subscription itself, and neither the slot nor the operator name needs a permission.
+    private fun networkLabel(capabilities: NetworkCapabilities?): String {
+        val type = getString(
+            when {
+                capabilities == null -> R.string.local_address_other
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> R.string.local_address_wifi
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> R.string.local_address_mobile
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> R.string.local_address_ethernet
+                else -> R.string.local_address_other
+            }
+        )
+        if (capabilities == null || !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.R
+        ) return type
+        val subId = (capabilities.networkSpecifier as? android.net.TelephonyNetworkSpecifier)?.subscriptionId ?: return type
+        val details = listOfNotNull(
+            android.telephony.SubscriptionManager.getSlotIndex(subId).takeIf { it >= 0 }
+                ?.let { getString(R.string.network_sim_slot, it + 1) },
+            try {
+                getSystemService(android.telephony.TelephonyManager::class.java)
+                    ?.createForSubscriptionId(subId)?.networkOperatorName
+            } catch (_: Exception) { null }?.takeIf { it.isNotBlank() }
+        )
+        return if (details.isEmpty()) type else "$type (${details.joinToString(", ")})"
+    }
 
     private fun unregisterNetworkCallback() {
         physicalNetworks.clear()
