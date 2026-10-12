@@ -47,6 +47,7 @@ android {
             keepDebugSymbols += "**/libfreeturn.so"
             keepDebugSymbols += "**/libqwdtt.so"
             keepDebugSymbols += "**/libopenflux.so"
+            keepDebugSymbols += "**/libpaperflux.so"
         }
     }
 
@@ -214,6 +215,9 @@ tasks.register<Exec>("buildGoBinaries") {
     inputs.files(file("${rootDir}/external/socks2tun"))
         .withPathSensitivity(PathSensitivity.RELATIVE)
         .optional()
+    inputs.files(file("${rootDir}/external/paperflux"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .optional()
     inputs.file(file("${rootDir}/build.sh")).withPathSensitivity(PathSensitivity.RELATIVE)
 
     listOf("arm64-v8a", "x86_64", "armeabi-v7a", "x86").forEach { abi ->
@@ -225,6 +229,7 @@ tasks.register<Exec>("buildGoBinaries") {
         outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libqwdtt.so"))
         outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libopenflux.so"))
         outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libsocks2tun.so"))
+        outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libpaperflux.so"))
     }
     configureNdk()
     wslOrBash("./build.sh go")

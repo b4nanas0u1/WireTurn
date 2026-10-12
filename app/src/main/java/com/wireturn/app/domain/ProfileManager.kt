@@ -926,7 +926,7 @@ class ProfileManager(
         if (!text.contains("freeturn://") && !text.contains("olcrtc://") && !text.contains("olconnect://") &&
             !text.contains("turnable://") && !text.contains("webdav://") &&
             !text.contains("webdavs://") && !text.contains("qwdtt://") && !text.contains("qwdtt:config") && !text.contains("wdtt://") &&
-            !text.contains("openflux://") && !text.contains("csqtt://") &&
+            !text.contains("openflux://") && !text.contains("csqtt://") && !text.contains("paperflux://") &&
             // A plain v2ray subscription (3x-ui, Marzban, Remnawave): Xray-only profiles, see XrayKernel.
             !text.contains("vless://") && !text.contains("trojan://") &&
             !text.contains("hysteria2://") && !text.contains("hy2://") &&

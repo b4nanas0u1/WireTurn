@@ -69,6 +69,11 @@ class XraySetupActivity : ComponentActivity() {
                 val openflux = if (json != null) Gson().fromJson(json, OpenFluxConfig::class.java) ?: OpenFluxConfig() else OpenFluxConfig()
                 ClientConfig(kernelConfig = KernelConfig.OpenFlux(openflux))
             }
+            KernelVariant.PAPERFLUX.name -> {
+                val json = intent.getStringExtra("EXTRA_PAPERFLUX_CONFIG_JSON")
+                val paperflux = if (json != null) Gson().fromJson(json, com.wireturn.app.data.kernel.PaperFluxConfig::class.java) ?: com.wireturn.app.data.kernel.PaperFluxConfig() else com.wireturn.app.data.kernel.PaperFluxConfig()
+                ClientConfig(kernelConfig = KernelConfig.PaperFlux(paperflux))
+            }
             KernelVariant.CSQTT.name -> {
                 val json = intent.getStringExtra("EXTRA_CSQTT_CONFIG_JSON")
                 val csqtt = if (json != null) Gson().fromJson(json, com.wireturn.app.data.kernel.CsqttConfig::class.java) ?: com.wireturn.app.data.kernel.CsqttConfig() else com.wireturn.app.data.kernel.CsqttConfig()

@@ -261,6 +261,7 @@ class CoreService : Service() {
             is KernelConfig.Qwdtt -> "qWDTT (${k.config.peer})"
             is KernelConfig.OpenFlux -> "OpenFlux (${k.config.transport})"
             is KernelConfig.Csqtt -> "CSQTT (${k.config.peer})"
+            is KernelConfig.PaperFlux -> "PaperFlux (${k.config.transport}, #${k.config.profileId})"
             is KernelConfig.Xray -> "Xray (${com.wireturn.app.ui.ValidatorUtils.parseVlessAddress(k.config.link) ?: "-"})"
             else -> "-"
         }
@@ -827,6 +828,8 @@ class CoreService : Service() {
                 old.socksPass != new.socksPass
             // Nothing of its own listens - only the link matters, compared above.
             is KernelConfig.Xray -> false
+            // No SOCKS5 auth flags exist upstream - only socksAddr matters (see PaperFluxKernel).
+            is KernelConfig.PaperFlux -> old.socksAddr != new.socksAddr
         }
     }
 

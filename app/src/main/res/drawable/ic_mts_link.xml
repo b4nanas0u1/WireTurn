@@ -1,0 +1,26 @@
+<!--
+  ~ MTS Link's own monochrome mark (its app's ic_logo_white, 40x40, no square behind it). Fit into
+  ~ Material's 24x24 box with 2 units of padding: the group's scale/translate map the paths' exact
+  ~ bounds onto the central 20x20, like every other platform mark. Path data itself is untouched.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="2"
+        android:translateY="2">
+        <path
+            android:fillColor="@android:color/white"
+            android:fillType="evenOdd"
+            android:pathData="M0,26.316V0H10.526V26.316C10.526,28.06 11.94,29.474 13.684,29.474H40V40H13.684C6.127,40 0,33.873 0,26.316Z" />
+        <path
+            android:fillColor="@android:color/white"
+            android:fillType="evenOdd"
+            android:pathData="M14.737,16.842V0H25.263V14.737H40V25.263H23.158C18.507,25.263 14.737,21.493 14.737,16.842Z" />
+    </group>
+</vector>

@@ -965,6 +965,17 @@ private fun RepoLinksContent(
 
             item {
                 RepoLinkItem(
+                    title = stringResource(R.string.paperflux_core),
+                    subtitle = "Flofyyk/PaperFlux",
+                    url = "https://github.com/Flofyyk/PaperFlux",
+                    containerColor = containerColor,
+                    onHaptic = { HapticUtil.perform(context, HapticUtil.Pattern.SELECTION) },
+                    onOpen = { uriHandler.openUri(it) }
+                )
+            }
+
+            item {
+                RepoLinkItem(
                     title = stringResource(R.string.socks2tun),
                     subtitle = "spkprsnts/socks2tun",
                     url = "https://github.com/spkprsnts/socks2tun",

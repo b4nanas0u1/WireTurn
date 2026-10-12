@@ -43,6 +43,7 @@ class CreateProfileActivity : ComponentActivity() {
                             "OpenFlux" -> android.content.Intent(this, com.wireturn.app.ui.activities.kernel.OpenFluxConfigActivity::class.java)
                             "CSQTT" -> android.content.Intent(this, com.wireturn.app.ui.activities.kernel.CsqttConfigActivity::class.java)
                             "Xray" -> android.content.Intent(this, com.wireturn.app.ui.activities.kernel.XrayLinkConfigActivity::class.java)
+                            "PaperFlux" -> android.content.Intent(this, com.wireturn.app.ui.activities.kernel.PaperFluxConfigActivity::class.java)
                             else -> null
                         }
                         intent?.let {

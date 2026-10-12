@@ -315,7 +315,7 @@ interface Kernel {
 
 object KernelRegistry {
     private val all: List<Kernel> = listOf(
-        TurnableKernel, OlcrtcKernel, WebdavKernel, FreeTurnKernel, QwdttKernel, OpenFluxKernel, CsqttKernel,
+        TurnableKernel, OlcrtcKernel, WebdavKernel, FreeTurnKernel, QwdttKernel, OpenFluxKernel, CsqttKernel, PaperFluxKernel,
         // Last: its decodeUri takes any valid vless/trojan/hysteria2 link.
         XrayKernel
     )

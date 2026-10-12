@@ -954,6 +954,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             trimmed
         )
 
+        val paperflux = com.wireturn.app.data.kernel.PaperFluxConfig.parse(trimmed)
+        if (paperflux != null) return com.wireturn.app.domain.ImportStatus.KernelConfigDetected(
+            "PaperFlux",
+            com.google.gson.Gson().toJson(paperflux),
+            trimmed
+        )
+
         // A plain vless/trojan/hysteria2 link - a profile of its own, Xray without a kernel.
         val xrayLink = com.wireturn.app.data.kernel.XrayLinkConfig.parse(trimmed)
         if (xrayLink != null) return com.wireturn.app.domain.ImportStatus.KernelConfigDetected(

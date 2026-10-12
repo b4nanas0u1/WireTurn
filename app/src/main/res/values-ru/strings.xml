@@ -40,6 +40,7 @@
     <string name="qwdtt_core">Ядро туннеля (qWDTT)</string>
     <string name="openflux_core">Ядро туннеля (OpenFlux)</string>
     <string name="csqtt_core">Ядро туннеля (CSQTT)</string>
+    <string name="paperflux_core">Ядро туннеля (PaperFlux)</string>
     <!-- Кнопки и общие действия -->
     <string name="btn_open">Открыть</string>
     <string name="btn_close">Закрыть</string>
@@ -117,6 +118,7 @@
     <string name="wg_not_used_with_webdav">WireGuard не используется с WebDAV</string>
     <string name="wg_not_used_with_qwdtt">WireGuard не используется с qWDTT</string>
     <string name="wg_not_used_with_openflux">WireGuard не используется с OpenFlux</string>
+    <string name="wg_not_used_with_paperflux">WireGuard не используется с PaperFlux</string>
     <string name="wg_not_used_with_csqtt">WireGuard не используется с CSQTT</string>
 
     <!-- Настройка клиента (Backend/Proxy) -->
@@ -160,6 +162,19 @@
     <string name="openflux_telemost_settings_title">Яндекс Телемост</string>
     <string name="openflux_telemost_url_label">Ссылка на конференцию</string>
     <string name="openflux_telemost_url_desc">Ссылка на конференцию Телемоста, общая с exit-node</string>
+    <string name="paperflux_profile_title">Профиль сервера</string>
+    <string name="paperflux_server_label">Сервер</string>
+    <string name="paperflux_server_desc">IP или домен VPS</string>
+    <string name="paperflux_profile_id_label">ID профиля</string>
+    <string name="paperflux_token_label">Ключ доступа</string>
+    <string name="paperflux_token_desc">Ключ профиля с сервера (32–128 символов), не пароль SSH</string>
+    <string name="paperflux_client_ip_label">Виртуальный IP</string>
+    <string name="paperflux_client_ip_desc">Адрес клиента, который сервер назначил профилю</string>
+    <string name="paperflux_documents_label">Документы</string>
+    <string name="paperflux_documents_desc_yandex">Одна или две ссылки на документы Яндекса, каждая с новой строки — две работают параллельно</string>
+    <string name="paperflux_documents_desc">Ссылка на документ, общий с сервером</string>
+    <string name="paperflux_volga_label">Документ Volga</string>
+    <string name="paperflux_volga_desc">Необязательно: отдельный пустой редактируемый документ Яндекса для резервного канала Volga</string>
     <string name="openflux_cups_url_label">Список комнат</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64-список комнат, который exit-node печатает при запуске (--transport cupsonline)</string>
     <string name="xray_link_label">URI</string>
@@ -516,6 +531,7 @@
     <string name="error_openflux_yandex_wrong_doc">Документ работает только через транспорт Volga (vyandex)</string>
     <string name="error_openflux_doc_not_found">Документ не найден</string>
     <string name="error_openflux_telemost_not_found">Конференция Телемоста не найдена</string>
+    <string name="error_paperflux_volga_mismatch">Тип подключения к документу не совпадает с профилем сервера — импортируйте актуальную конфигурацию</string>
     <string name="error_openflux_yandex_captcha">Яндекс требует капчу</string>
     <string name="error_openflux_yandex_login">Документ требует входа в Яндекс</string>
     <string name="error_openflux_cups_rooms_gone">Комнаты Cups закрыты, пересоздайте их на ноде</string>
