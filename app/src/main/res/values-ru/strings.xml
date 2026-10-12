@@ -136,6 +136,8 @@
     <string name="connection_type_desc">Direct крайне не рекомендуется</string>
     <string name="encryption_label">Режим шифрования</string>
     <string name="encryption_desc">Область применения шифрования</string>
+    <string name="turnable_mask_label">Маскировка</string>
+    <string name="turnable_mask_desc">Внешнее шифрование DTLS/SRTP заменяется лёгкой маскировкой — так быстрее, трафик внутри и так зашифрован. Если сервер её не поддерживает, внешний слой шифруется полностью</string>
     <string name="pub_key_label">Публичный ключ</string>
     <string name="pub_key_desc">Ключ для защищенного соединения с сервером</string>
     <string name="peers_label">Параллельные соединения</string>

@@ -89,6 +89,7 @@ import com.wireturn.app.ui.ShareDropdownMenu
 import com.wireturn.app.ui.SliderRow
 import com.wireturn.app.ui.StandardLeadingIcon
 import com.wireturn.app.ui.SupportingText
+import com.wireturn.app.ui.SwitchRow
 import com.wireturn.app.ui.TextFieldRow
 import com.wireturn.app.ui.ValidatorUtils
 import com.wireturn.app.ui.noFlingExpandConnection
@@ -483,7 +484,19 @@ fun TurnableConfigScreen(
                         maxLines = 5
                     )
                 }
-                SectionItem(position = ItemPosition.Bottom) {
+                // mpath always encrypts end to end, so the encryption mode doesn't apply to it - its
+                // outer masking does instead (the binary runs only the selected route, see toUri).
+                val activeRoute = config.routes.find { it.routeId == config.selectedRouteId } ?: config.routes.firstOrNull()
+                if (activeRoute?.transport == "mpath") SectionItem(position = ItemPosition.Bottom) {
+                    SwitchRow(
+                        label = stringResource(R.string.turnable_mask_label),
+                        supportingText = stringResource(R.string.turnable_mask_desc),
+                        checked = config.mask != "off",
+                        // On is the binary's default - left out of the link rather than spelled out.
+                        onCheckedChange = { config = config.copy(mask = if (it) null else "off") },
+                        isModified = isEditMode && config.mask != initialConfig.mask
+                    )
+                } else SectionItem(position = ItemPosition.Bottom) {
                     LabeledButtonGroup(
                         label = stringResource(R.string.encryption_label),
                         supportingText = stringResource(R.string.encryption_desc),
@@ -528,7 +541,7 @@ fun TurnableConfigScreen(
                         options.forEachIndexed { index, p ->
                             selectableButtonItem(
                                 selected = currentProto == p,
-                                onSelect = { config = config.copy(proto = if (p == "none") null else p) },
+                                onSelect = { config = config.copy(proto = p) },
                                 label = p.uppercase(),
                                 index = index,
                                 count = options.size
@@ -844,7 +857,8 @@ fun RouteEditDialog(
 
                 SectionGroup(title = stringResource(R.string.route_transport_label)) {
                     LabeledButtonGroup {
-                        val options = listOf("kcp", "none")
+                        // mpath: upstream's default and recommended transport for any socket (0.6.4+).
+                        val options = listOf("mpath", "kcp", "none")
                         options.forEachIndexed { index, t ->
                             val isNone = t == "none"
                             selectableButtonItem(

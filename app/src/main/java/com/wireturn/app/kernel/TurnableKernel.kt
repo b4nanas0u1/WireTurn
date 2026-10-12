@@ -29,7 +29,11 @@ object TurnableKernel : Kernel {
         val config = (cfg as KernelConfig.Turnable).config
         return listOfNotNull(
             config.platformDisplayName,
-            context.getString(R.string.kernel_tag_full_encryption).takeIf { config.encryption == "full" },
+            // mpath always encrypts everything - the encryption mode only applies to the other transports.
+            context.getString(R.string.kernel_tag_full_encryption).takeIf {
+                config.encryption == "full" &&
+                    (config.routes.find { it.routeId == config.selectedRouteId } ?: config.routes.firstOrNull())?.transport != "mpath"
+            },
             config.cloak?.takeIf { it.isNotBlank() && it != "none" }?.replaceFirstChar(Char::uppercase)
         )
     }

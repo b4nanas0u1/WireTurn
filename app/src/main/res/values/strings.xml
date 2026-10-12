@@ -174,6 +174,8 @@
     <string name="connection_type_desc">Direct mode is highly discouraged</string>
     <string name="encryption_label">Encryption mode</string>
     <string name="encryption_desc">Encryption scope</string>
+    <string name="turnable_mask_label">Masking</string>
+    <string name="turnable_mask_desc">The outer DTLS/SRTP encryption is replaced by cheap masking - faster, since the traffic inside is already encrypted. If the server doesn\'t support it, the outer layer stays fully encrypted</string>
     <string name="pub_key_label">Public key</string>
     <string name="pub_key_desc">Key for a secure connection with the server</string>
     <string name="peers_label">Parallel connections</string>

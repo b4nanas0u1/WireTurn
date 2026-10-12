@@ -28,6 +28,7 @@ data class TurnableConfig(
     @SerializedName("gateway") val gateway: String = "",
     @SerializedName("proto") val proto: String? = "srtp",
     @SerializedName("cloak") val cloak: String? = "none",
+    @SerializedName("mask") val mask: String? = null,
     @SerializedName("routes") val routes: List<TurnableRoute> = emptyList(),
     @SerializedName("selected_route_id") val selectedRouteId: String = ""
 ) {
@@ -41,6 +42,7 @@ data class TurnableConfig(
         gateway = (gateway as Any?)?.toString()?.take(500) ?: "",
         proto = (proto as Any?)?.toString()?.take(100) ?: "srtp",
         cloak = (cloak as Any?)?.toString()?.take(100) ?: "none",
+        mask = (mask as Any?)?.toString()?.trim()?.take(20)?.ifBlank { null },
         selectedRouteId = (selectedRouteId as Any?)?.toString()?.take(100) ?: "",
         routes = (routes as List<TurnableRoute>?)?.map { it.sanitize() } ?: emptyList()
     )
@@ -70,6 +72,7 @@ data class TurnableConfig(
         builder.appendQueryParameter("gateway", gateway)
         proto?.let { builder.appendQueryParameter("proto", it) }
         cloak?.let { builder.appendQueryParameter("cloak", it) }
+        mask?.let { builder.appendQueryParameter("mask", it) }
         builder.appendQueryParameter("peers", peers.toString())
         encryption?.let { builder.appendQueryParameter("encryption", it) }
         pubKey?.let { builder.appendQueryParameter("pub_key", it) }
@@ -127,6 +130,7 @@ data class TurnableConfig(
                     gateway = uri.getQueryParameter("gateway") ?: current.gateway,
                     proto = uri.getQueryParameter("proto") ?: current.proto,
                     cloak = uri.getQueryParameter("cloak") ?: current.cloak,
+                    mask = uri.getQueryParameter("mask") ?: current.mask,
                     routes = routes.ifEmpty { current.routes },
                     selectedRouteId = uri.getQueryParameter("selected_route_id")
                         ?: (if (routes.isNotEmpty()) routes.firstOrNull()?.routeId ?: "" else current.selectedRouteId)
