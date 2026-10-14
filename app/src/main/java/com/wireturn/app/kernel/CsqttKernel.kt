@@ -243,13 +243,14 @@ object CsqttKernel : Kernel {
         return false
     }
 
-    // The client's own Russian text after its "FATAL_AUTH:"-style tag (rust-client/protocol.rs) -
-    // except a password bound to another device, which gets what to do about it: this app's
-    // ANDROID_ID differs from the official app's, even on the same phone.
+    // The client's own Russian text after its "FATAL_AUTH:"-style tag (rust-client/protocol.rs),
+    // shown under the start button - so without the advice some of them add after a ";" ("...
+    // разные версии протокола; выполните деплой ..."). A password bound to another device gets a
+    // string of its own: this app's ANDROID_ID differs from the official app's, even on one phone.
     private fun readableFailure(ctx: KernelLogContext, text: String): String {
         if (text.contains("другому устройству")) return ctx.getString(R.string.error_csqtt_device_mismatch)
-        val reason = FATAL_TAG.find(text)?.let { text.substring(it.range.last + 1).trim() } ?: text.trim()
-        return reason.replaceFirstChar { it.uppercase() }
+        val reason = FATAL_TAG.find(text)?.let { text.substring(it.range.last + 1) } ?: text
+        return reason.substringBefore(';').trim().replaceFirstChar { it.uppercase() }
     }
 
     private val FATAL_TAG = Regex("""FATAL_[A-Z]+:""")

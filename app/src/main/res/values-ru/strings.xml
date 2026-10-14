@@ -433,8 +433,8 @@
     <!-- Ошибки и системные сообщения -->
     <string name="error_core_crashed">Туннель упал %1$d раз — проверьте настройки</string>
     <string name="error_settings_empty">Не заполнены настройки клиента</string>
-    <string name="error_socks_public_requires_auth">Если адрес SOCKS5 не localhost, необходима аутентификация</string>
-    <string name="error_socks_public_no_auth_support">Это ядро не поддерживает аутентификацию SOCKS5 — используйте адрес localhost</string>
+    <string name="error_socks_public_requires_auth">SOCKS5 не на localhost требует пароль</string>
+    <string name="error_socks_public_no_auth_support">SOCKS5 этого ядра работает только на localhost</string>
     <string name="error_core_not_started">Туннель не запустился</string>
     <string name="log_xray_invalid_config">* [Xray] Некорректный или отсутствующий конфиг, запуск отменен</string>
     <string name="error_update_url_not_found">URL обновления не найден</string>
@@ -519,27 +519,27 @@
 
     <string name="error_release_info_failed">Не удалось получить информацию о релизе</string>
     <string name="error_process_no_output">Процесс завершился без вывода (код: %1$d)</string>
-    <string name="error_csqtt_device_mismatch">Пароль привязан к другому устройству. Отвяжите его в веб-панели сервера CSQTT или используйте отдельный пароль</string>
-    <string name="error_sidecar_failed">Локальный SOCKS5 не запустился, подробности в логе</string>
+    <string name="error_csqtt_device_mismatch">Пароль привязан к другому устройству</string>
+    <string name="error_sidecar_failed">Локальный SOCKS5 не запустился</string>
     <string name="error_sidecar_port_in_use">Порт SOCKS5 %1$s уже занят</string>
-    <string name="error_kernel_unsupported_device">Это ядро недоступно для архитектуры этого устройства</string>
+    <string name="error_kernel_unsupported_device">Ядро не поддерживает это устройство</string>
     <string name="error_critical_format">* КРИТИЧЕСКАЯ ОШИБКА: %1$s</string>
     <string name="error_connecting">Ошибка подключения</string>
     <string name="error_platform_unavailable">Платформа недоступна</string>
     <string name="error_kernel_or_settings">Проблема с ядром или настройками</string>
     <string name="error_webdav_backend_unreachable">Бэкенд WebDAV недоступен</string>
     <string name="error_webdav_server_unavailable">Сервер туннеля WebDAV недоступен</string>
-    <string name="error_openflux_vyandex_wrong_doc">Документ не поддерживает Volga — переключитесь на транспорт yandex</string>
-    <string name="error_openflux_yandex_wrong_doc">Документ работает только через транспорт Volga (vyandex)</string>
+    <string name="error_openflux_vyandex_wrong_doc">Документ не поддерживает Volga</string>
+    <string name="error_openflux_yandex_wrong_doc">Документ работает только через Volga</string>
     <string name="error_openflux_doc_not_found">Документ не найден</string>
     <string name="error_openflux_telemost_not_found">Конференция Телемоста не найдена</string>
-    <string name="error_paperflux_volga_mismatch">Тип подключения к документу не совпадает с профилем сервера — импортируйте актуальную конфигурацию</string>
+    <string name="error_paperflux_volga_mismatch">Тип документа не совпадает с сервером</string>
     <string name="error_openflux_yandex_captcha">Яндекс требует капчу</string>
     <string name="error_openflux_yandex_login">Документ требует входа в Яндекс</string>
-    <string name="error_openflux_cups_rooms_gone">Комнаты Cups закрыты, пересоздайте их на ноде</string>
+    <string name="error_openflux_cups_rooms_gone">Комнаты Cups закрыты</string>
     <string name="error_openflux_cups_rooms_unreachable">Комнаты Cups не отвечают</string>
     <string name="error_openflux_avito_rooms_unreachable">Комнаты Avito не отвечают</string>
-    <string name="error_openflux_avito_bad_rooms">Неверный список комнат Avito, скопируйте его с ноды заново</string>
+    <string name="error_openflux_avito_bad_rooms">Неверный список комнат Avito</string>
     <string name="error_openflux_key_mismatch">Ключ шифрования не совпадает с нодой</string>
     <string name="error_openflux_dns_lookup_failed">Хост не найден: %1$s</string>
 

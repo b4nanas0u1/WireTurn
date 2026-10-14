@@ -485,8 +485,8 @@
     <!-- Errors and system messages -->
     <string name="error_core_crashed">Tunnel crashed %1$d times — check settings</string>
     <string name="error_settings_empty">Client settings not filled</string>
-    <string name="error_socks_public_requires_auth">SOCKS5 auth is required when the listen address is not localhost</string>
-    <string name="error_socks_public_no_auth_support">This kernel\'s SOCKS5 doesn\'t support authentication - use a localhost address</string>
+    <string name="error_socks_public_requires_auth">SOCKS5 outside localhost needs a password</string>
+    <string name="error_socks_public_no_auth_support">This kernel\'s SOCKS5 works on localhost only</string>
     <string name="error_core_not_started">Tunnel failed to start</string>
     <string name="log_xray_invalid_config">* [Xray] Invalid or missing config, startup canceled</string>
     <string name="error_update_url_not_found">Update URL not found</string>
@@ -571,27 +571,27 @@
 
     <string name="error_release_info_failed">Could not get release information</string>
     <string name="error_process_no_output">Process finished with no output (code: %1$d)</string>
-    <string name="error_csqtt_device_mismatch">This password is bound to another device. Unbind it in the CSQTT server\'s web panel, or use a separate password</string>
-    <string name="error_sidecar_failed">Local SOCKS5 didn\'t start, see the log</string>
+    <string name="error_csqtt_device_mismatch">Password is bound to another device</string>
+    <string name="error_sidecar_failed">Local SOCKS5 didn\'t start</string>
     <string name="error_sidecar_port_in_use">SOCKS5 port %1$s is already in use</string>
-    <string name="error_kernel_unsupported_device">This kernel isn\'t available for this device\'s architecture</string>
+    <string name="error_kernel_unsupported_device">Kernel doesn\'t support this device</string>
     <string name="error_critical_format">* CRITICAL ERROR: %1$s</string>
     <string name="error_connecting">Connection error</string>
     <string name="error_platform_unavailable">Platform unavailable</string>
     <string name="error_kernel_or_settings">Problem with core or settings</string>
     <string name="error_webdav_backend_unreachable">WebDAV backend is unreachable</string>
     <string name="error_webdav_server_unavailable">WebDAV tunnel server is unavailable</string>
-    <string name="error_openflux_vyandex_wrong_doc">Document doesn\'t support Volga — switch to the yandex transport</string>
-    <string name="error_openflux_yandex_wrong_doc">Document only works with the Volga (vyandex) transport</string>
+    <string name="error_openflux_vyandex_wrong_doc">Document doesn\'t support Volga</string>
+    <string name="error_openflux_yandex_wrong_doc">Document only works via Volga</string>
     <string name="error_openflux_doc_not_found">Document not found</string>
     <string name="error_openflux_telemost_not_found">Telemost conference not found</string>
-    <string name="error_paperflux_volga_mismatch">The document\'s connection type doesn\'t match the server profile - import the current configuration</string>
+    <string name="error_paperflux_volga_mismatch">Document type doesn\'t match the server</string>
     <string name="error_openflux_yandex_captcha">Yandex requires a captcha</string>
     <string name="error_openflux_yandex_login">Document requires a Yandex login</string>
-    <string name="error_openflux_cups_rooms_gone">Cups rooms are closed, recreate them on the exit node</string>
+    <string name="error_openflux_cups_rooms_gone">Cups rooms are closed</string>
     <string name="error_openflux_cups_rooms_unreachable">Cups rooms are not responding</string>
     <string name="error_openflux_avito_rooms_unreachable">Avito rooms are not responding</string>
-    <string name="error_openflux_avito_bad_rooms">Invalid Avito room list, copy it from the exit node again</string>
+    <string name="error_openflux_avito_bad_rooms">Invalid Avito room list</string>
     <string name="error_openflux_key_mismatch">Encryption key doesn\'t match the node</string>
     <string name="error_openflux_dns_lookup_failed">DNS lookup failed: %1$s</string>
 
