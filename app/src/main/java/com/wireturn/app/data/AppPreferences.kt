@@ -26,10 +26,12 @@ import com.wireturn.app.data.kernel.OpenFluxConfig
 import com.wireturn.app.data.kernel.QwdttConfig
 import com.wireturn.app.data.kernel.TurnableConfig
 import com.wireturn.app.data.kernel.WebdavConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.StringReader
 
@@ -193,9 +195,15 @@ class AppPreferences(val context: Context) {
     // (not hardcoded) so more methods can be added later without a migration.
     val countryDetectionMethodFlow: Flow<String> = appCtx.internalDataStore.data.mapPref(COUNTRY_DETECTION_METHOD, "auto")
 
+    // The three JSON lists below are parsed only when their own key changes, and off the main
+    // thread: DataStore re-emits every key on any edit, and a profile switch edits several (the
+    // active configs, the current id, the subscription's active profile) right while the profiles
+    // sheet animates closed - re-parsing every profile on each, on the collector's main thread,
+    // stalled it with a large subscription.
     val profilesFlow: Flow<List<Profile>> = appCtx.internalDataStore.data
-        .map { p ->
-            val json = p[PROFILES_JSON] ?: "[]"
+        .map { it[PROFILES_JSON] ?: "[]" }
+        .distinctUntilChanged()
+        .map { json ->
             try {
                 val list = gson.fromJson<List<Any>>(json, object : TypeToken<List<Any>>() {}.type) ?: emptyList()
                 val defaultName = appCtx.getString(R.string.profile_default_name)
@@ -217,30 +225,33 @@ class AppPreferences(val context: Context) {
                 com.wireturn.app.AppLogsState.addLog("Error loading profiles: ${e.message}")
                 emptyList()
             }
-        }.distinctUntilChanged()
+        }.distinctUntilChanged().flowOn(Dispatchers.Default)
 
     val subscriptionsFlow: Flow<List<Subscription>> = appCtx.internalDataStore.data
-        .map { p ->
-            val json = p[SUBSCRIPTIONS_JSON] ?: "[]"
+        .map { it[SUBSCRIPTIONS_JSON] ?: "[]" }
+        .distinctUntilChanged()
+        .map { json ->
             try {
                 gson.fromJson<List<Subscription>>(json, object : TypeToken<List<Subscription>>() {}.type) ?: emptyList()
             } catch (_: Exception) {
                 emptyList()
             }
-        }.distinctUntilChanged()
+        }.distinctUntilChanged().flowOn(Dispatchers.Default)
 
     /** Last known tunnel-exit country (ISO-3166 alpha-2) per profile id, from the most recent successful connection. */
     val profileCountriesFlow: Flow<Map<String, String>> = appCtx.internalDataStore.data
-        .map { p ->
+        .map { it[PROFILE_COUNTRIES_JSON] ?: "{}" }
+        .distinctUntilChanged()
+        .map { json ->
             try {
                 gson.fromJson<Map<String, String>>(
-                    p[PROFILE_COUNTRIES_JSON] ?: "{}",
+                    json,
                     object : TypeToken<Map<String, String>>() {}.type
                 ) ?: emptyMap()
             } catch (_: Exception) {
                 emptyMap()
             }
-        }.distinctUntilChanged()
+        }.distinctUntilChanged().flowOn(Dispatchers.Default)
 
     val currentProfileIdFlow: Flow<String> = appCtx.internalDataStore.data.mapPref(CURRENT_PROFILE_ID, "default")
     val currentProfileNameFlow: Flow<String?> = combine(profilesFlow, currentProfileIdFlow) { profiles, id ->
