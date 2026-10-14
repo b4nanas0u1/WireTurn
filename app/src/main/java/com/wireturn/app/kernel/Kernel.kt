@@ -77,6 +77,8 @@ class BinaryOutputState {
     var yandexConnectedAt = 0L
     // When the Yandex Boards WebSocket handshake last completed - see OpenFluxKernel point 7.
     var boardsConnectedAt = 0L
+    // Avito rooms whose WebSocket is up, by the short room id the transport logs - see OpenFluxKernel point 9.
+    val avitoReadyRooms = mutableSetOf<String>()
     // FreeTurn UDP mode: DTLS sessions to the server currently up - see FreeTurnKernel point 2.
     var freeTurnDtlsOpen = 0
     // FreeTurn TCP mode: the pool's last reported "(active: N)".

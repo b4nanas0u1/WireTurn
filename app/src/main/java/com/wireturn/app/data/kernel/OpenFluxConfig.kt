@@ -21,7 +21,8 @@ data class OpenFluxConfig(
     // "Volga" realtime-collab transport - same `url`, a rewritten disguise/backend on Yandex's
     // side), "oneme" (MAX WebRTC DataChannel transport, needs maxToken/maxUid), "cupsonline"
     // (cups.online live-coding-room transport - same `url` slot, but it holds the base64 room
-    // list the exit node prints at startup, not a document link) or "mailru" (Mail.ru Docs
+    // list the exit node prints at startup, not a document link) or "avito" (code.avito.ru
+    // ShareDB rooms - the same room-list `url` as cupsonline) or "mailru" (Mail.ru Docs
     // cursor-message transport, same idea as classic yandex but riding a public cloud.mail.ru
     // document instead - `url` holds that document's weblink) or "boards" (Yandex Boards
     // whiteboard transport, `url` holds the board link with its ?hash=) or "telemost" (Yandex
@@ -29,7 +30,7 @@ data class OpenFluxConfig(
     // conference link; experimental, exit nodes need node-v1.3.0+) - the exact values
     // OpenFlux's own `-transport` flag accepts (the CLI arg is literally "oneme", not "max").
     @SerializedName("transport") val transport: String = "yandex",
-    // Yandex.Docs/Mail.ru document URL for yandex/vyandex/mailru; base64 room list for cupsonline.
+    // Yandex.Docs/Mail.ru document URL for yandex/vyandex/mailru; base64 room list for cupsonline/avito.
     @SerializedName("url") val url: String = "",
     // Client's own MAX account auth token, passed to LoginByToken - required for "oneme".
     @SerializedName("max_token") val maxToken: String = "",
@@ -63,6 +64,7 @@ data class OpenFluxConfig(
             "oneme" -> "MAX (oneme)"
             "vyandex" -> "Volga Y.Docs"
             "cupsonline" -> "Cups.online"
+            "avito" -> "Avito"
             "mailru" -> "Mail.ru Docs"
             "boards" -> "Y.Boards"
             "telemost" -> "Telemost"
@@ -82,12 +84,13 @@ data class OpenFluxConfig(
             "oneme" -> "oneme"
             "vyandex" -> "vyandex"
             "cupsonline" -> "cupsonline"
+            "avito" -> "avito"
             "mailru" -> "mailru"
             "boards" -> "boards"
             "telemost" -> "telemost"
             else -> "yandex"
         },
-        url = (url as Any?)?.toString()?.trim()?.take(2000) ?: "",
+        url =(url as Any?)?.toString()?.trim()?.take(2000) ?: "",
         maxToken = (maxToken as Any?)?.toString()?.trim()?.take(4096) ?: "",
         maxUid = (maxUid as Any?)?.toString()?.trim()?.filter(Char::isDigit)?.take(32) ?: "",
         encryptionKey = (encryptionKey as Any?)?.toString()?.trim()?.take(4096) ?: "",
@@ -171,7 +174,8 @@ data class OpenFluxConfig(
          * The encryption context the core derives for a single-transport client on its own
          * (external/openflux transport/kdfcontext.go, KDFContexts): the document URL, except
          * where there's none to name the channel - a cupsonline room list (its exit creates the
-         * rooms, so it can't know it beforehand) and MAX.
+         * rooms, so it can't know it beforehand) and MAX. An avito room list is created the same
+         * way, but the core's contextURL doesn't make that exception for it - it names the channel.
          */
         fun derivedContext(transport: String, url: String): String = when {
             transport == "cupsonline" || transport == "oneme" -> CONTEXT_PLACEHOLDER
@@ -182,7 +186,7 @@ data class OpenFluxConfig(
         // share.go's maxPayload: bounds the inflated JSON against a crafted link.
         private const val V1_MAX_PAYLOAD = 16 shl 10
 
-        private val V1_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "telemost")
+        private val V1_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "avito", "telemost")
 
         // share.ModeStream and the carriers a stream-mode exit speaks (share.go's streamTypes).
         const val MODE_STREAM = "stream"
@@ -282,6 +286,7 @@ data class OpenFluxConfig(
                 "oneme" -> "oneme"
                 "vyandex" -> "vyandex"
                 "cupsonline" -> "cupsonline"
+                "avito" -> "avito"
                 "mailru" -> "mailru"
                 "boards" -> "boards"
                 "telemost" -> "telemost"

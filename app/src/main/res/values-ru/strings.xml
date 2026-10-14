@@ -153,6 +153,7 @@
     <string name="openflux_vyandex_settings_title">Volga Яндекс.Документы</string>
     <string name="openflux_oneme_settings_title">MAX</string>
     <string name="openflux_cupsonline_settings_title">Cups.online</string>
+    <string name="openflux_avito_settings_title">Avito</string>
     <string name="openflux_mailru_settings_title">Mail.ru Документы</string>
     <string name="openflux_boards_settings_title">Яндекс Доски</string>
     <string name="openflux_url_label">URL документа</string>
@@ -177,6 +178,7 @@
     <string name="paperflux_volga_desc">Необязательно: отдельный пустой редактируемый документ Яндекса для резервного канала Volga</string>
     <string name="openflux_cups_url_label">Список комнат</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64-список комнат, который exit-node печатает при запуске (--transport cupsonline)</string>
+    <string name="openflux_avito_url_desc" tools:ignore="TypographyDashes">Base64-список комнат, который exit-node печатает при запуске (--transport avito)</string>
     <string name="xray_link_label">URI</string>
     <string name="xray_link_desc">Ссылка vless://, trojan://, hysteria2:// или hy2://</string>
     <string name="openflux_cups_room_label">Комната</string>
@@ -536,6 +538,8 @@
     <string name="error_openflux_yandex_login">Документ требует входа в Яндекс</string>
     <string name="error_openflux_cups_rooms_gone">Комнаты Cups закрыты, пересоздайте их на ноде</string>
     <string name="error_openflux_cups_rooms_unreachable">Комнаты Cups не отвечают</string>
+    <string name="error_openflux_avito_rooms_unreachable">Комнаты Avito не отвечают</string>
+    <string name="error_openflux_avito_bad_rooms">Неверный список комнат Avito, скопируйте его с ноды заново</string>
     <string name="error_openflux_key_mismatch">Ключ шифрования не совпадает с нодой</string>
     <string name="error_openflux_dns_lookup_failed">Хост не найден: %1$s</string>
 

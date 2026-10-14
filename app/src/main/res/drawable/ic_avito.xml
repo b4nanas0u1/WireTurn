@@ -1,0 +1,27 @@
+<!--
+  ~ Monochrome mark for the "Avito" (code.avito.ru) OpenFlux transport. Avito Tech's own logo is
+  ~ an "avito.tech" wordmark followed by a speech-bubble mark with a ring knocked out of it; this
+  ~ keeps only that mark (its source's last path) and drops the wordmark, the same reduction
+  ~ ic_cupsonline does. The ring is a hole by the non-zero rule (its subpath winds the other way),
+  ~ as in the source. Path data is untouched; only the fill (flattened to one color) changed.
+  ~
+  ~ Fit into Material's 24x24 box with 2 units of padding: the group's scale/translate map the
+  ~ path's bounds (min/max over anchors and control points, like ic_cupsonline) onto the central
+  ~ 20x20, centered, like every other platform mark, so they all render the same size.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <group
+        android:scaleX="0.29721"
+        android:scaleY="0.29721"
+        android:translateX="-97.78333"
+        android:translateY="1.93613">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M367.295 36.5033C366.738 35.0107 366.484 33.4233 366.549 31.8328C366.614 30.2423 366.995 28.6803 367.672 27.2371C368.348 25.794 369.306 24.4983 370.491 23.4249C371.675 22.3516 373.061 21.522 374.571 20.984C377.595 19.9463 380.91 20.1318 383.798 21.5004C386.686 22.869 388.916 25.3108 390.005 28.298C391.095 31.2853 390.956 34.578 389.62 37.4648C388.284 40.3516 385.857 42.6004 382.864 43.7255C381.364 44.2667 379.771 44.5092 378.177 44.4391C376.583 44.369 375.018 43.9877 373.572 43.317C372.126 42.6462 370.828 41.6993 369.751 40.5302C368.674 39.3611 367.839 37.9927 367.295 36.5033ZM335.731 42.6608L358.578 40.2466L346.912 50.3114L365.037 48.9337L356.844 57L377.814 54.2419C381.634 53.7596 383.787 53.2773 386.149 52.3793C397.19 48.1743 403.023 36.0415 398.996 24.9427C398.032 22.2974 396.552 19.8667 394.64 17.7898C392.729 15.713 390.424 14.0307 387.857 12.8392C385.29 11.6477 382.511 10.9704 379.68 10.8461C376.849 10.7218 374.021 11.1528 371.358 12.1147C369.066 12.9408 367.189 13.9106 363.788 16.0452L346.01 27.2184L357.467 28.1831L335.731 42.6608Z" />
+    </group>
+</vector>

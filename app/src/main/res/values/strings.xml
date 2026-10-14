@@ -202,6 +202,7 @@
     <string name="openflux_vyandex_settings_title">Volga Yandex.Docs</string>
     <string name="openflux_oneme_settings_title">MAX</string>
     <string name="openflux_cupsonline_settings_title">Cups.online</string>
+    <string name="openflux_avito_settings_title">Avito</string>
     <string name="openflux_mailru_settings_title">Mail.ru Docs</string>
     <string name="openflux_boards_settings_title">Yandex Boards</string>
     <string name="openflux_url_label">Document URL</string>
@@ -226,6 +227,7 @@
     <string name="paperflux_volga_desc">Optional: a separate empty editable Yandex document for the Volga fallback lane</string>
     <string name="openflux_cups_url_label">Room list</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport cupsonline)</string>
+    <string name="openflux_avito_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport avito)</string>
     <string name="openflux_cups_room_label">Room</string>
     <string name="openflux_cups_room_desc">cups.online room link from the PHP node\'s page (?room=)</string>
     <string name="openflux_stream_mode_label">Without a server</string>
@@ -588,6 +590,8 @@
     <string name="error_openflux_yandex_login">Document requires a Yandex login</string>
     <string name="error_openflux_cups_rooms_gone">Cups rooms are closed, recreate them on the exit node</string>
     <string name="error_openflux_cups_rooms_unreachable">Cups rooms are not responding</string>
+    <string name="error_openflux_avito_rooms_unreachable">Avito rooms are not responding</string>
+    <string name="error_openflux_avito_bad_rooms">Invalid Avito room list, copy it from the exit node again</string>
     <string name="error_openflux_key_mismatch">Encryption key doesn\'t match the node</string>
     <string name="error_openflux_dns_lookup_failed">DNS lookup failed: %1$s</string>
 

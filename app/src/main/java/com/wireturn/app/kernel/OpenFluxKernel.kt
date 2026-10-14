@@ -15,8 +15,8 @@ import com.wireturn.app.ui.activities.kernel.OpenFluxConfigActivity
 import java.io.File
 
 // OpenFlux (external/openflux, upstream p1neappleXpress/OpenFlux). No captcha flow, but no single
-// clean "connected" line either - the six transports it wraps (Yandex.Docs, vyandex/"Volga",
-// Yandex Boards, MAX/oneme, cups.online, Mail.ru Docs) differ a lot in how much they actually log,
+// clean "connected" line either - the transports it wraps (Yandex.Docs, vyandex/"Volga", Yandex
+// Boards, Telemost, MAX/oneme, cups.online, Avito, Mail.ru Docs) differ a lot in how much they log,
 // so parseLogLine's connected/error detection is split by transport below. log.Fatalf hard failures in main.go also
 // exit the process, so the generic "no output before exit" fallback in CoreService.runBinary
 // would eventually catch those too, but matching the line directly gives a much faster, more
@@ -65,7 +65,10 @@ object OpenFluxKernel : Kernel {
         return PER_PACKET_TRACES.any { line.startsWith(it, tag) } ||
             // Boards echoes every object back to its sender, logged per packet as
             // "[BOARDS] <action>: own echo (...), skip" - the action is a variable, so no prefix.
-            (line.startsWith("[BOARDS] ", tag) && line.contains(": own echo ("))
+            (line.startsWith("[BOARDS] ", tag) && line.contains(": own echo (")) ||
+            // Avito's stats loop logs every room every 5s ("[AVITO-tx-00 <id>] tx=..."); the
+            // "[AVITO-TOTAL]" line after them stays as the one summary, like "[CUPS-TOTAL]".
+            line.startsWith("[AVITO-tx-", tag) || line.startsWith("[AVITO-rx-", tag)
     }
 
     private val PER_PACKET_TRACES = listOf(
@@ -108,6 +111,11 @@ object OpenFluxKernel : Kernel {
     // cupsonline.go's reportRooms: "[CUPS] Cups: живых комнат <alive>/<total>".
     private val CUPS_ALIVE_ROOMS_REGEX = Regex("""живых комнат (\d+)/(\d+)""")
 
+    // avito.go's per-room lines name the room by the first 8 characters of its id:
+    // "[AVITO] WS ready: <id> ver=..." and "[AVITO] ws error (<id>): <error>".
+    private val AVITO_READY_REGEX = Regex("""\[AVITO] WS ready: (\S+)""")
+    private val AVITO_WS_ERROR_REGEX = Regex("""\[AVITO] ws error \(([^)]+)\)""")
+
     // Same "healthy session" cutoff yandex.go uses before resetting its own reconnect backoff.
     private const val YANDEX_HEALTHY_SESSION_MS = 15_000L
 
@@ -119,7 +127,7 @@ object OpenFluxKernel : Kernel {
     private class FastFailRule(val transports: Set<String>, val messageRes: Int, val matcher: (String) -> Boolean)
 
     // Declared before FAST_FAIL_RULES: object properties initialize in declaration order.
-    private val ALL_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "oneme", "telemost")
+    private val ALL_TRANSPORTS = setOf("yandex", "vyandex", "boards", "mailru", "cupsonline", "avito", "oneme", "telemost")
 
     private val FAST_FAIL_RULES = listOf(
         // 0a. Volga auth failure (transport/yandex/vyandex.go): "action_url missing" means the
@@ -179,6 +187,11 @@ object OpenFluxKernel : Kernel {
         FastFailRule(setOf("cupsonline"), R.string.error_openflux_cups_rooms_gone) {
             "all rooms are gone" in it
         },
+        // 0k. The avito url holds no room list the core can unpack (avito.go's enterRooms: a
+        // client never creates rooms of its own) - Start() fails with it.
+        FastFailRule(setOf("avito"), R.string.error_openflux_avito_bad_rooms) {
+            "--url must contain room list" in it
+        },
         // 0j. Telemost's own connection-info call (transport/yandex/telemost.go) answering 404: the
         // conference link names no conference (mistyped, or it was ended) - Start() fails with it.
         FastFailRule(setOf("telemost"), R.string.error_openflux_telemost_not_found) {
@@ -222,6 +235,7 @@ object OpenFluxKernel : Kernel {
         "yandex", "vyandex" -> R.drawable.ic_yandex_docs
         "oneme" -> R.drawable.ic_max
         "cupsonline" -> R.drawable.ic_cupsonline
+        "avito" -> R.drawable.ic_avito
         "mailru" -> R.drawable.ic_mailru
         "boards" -> R.drawable.ic_yandex_boards
         "telemost" -> R.drawable.ic_telemost
@@ -397,13 +411,14 @@ object OpenFluxKernel : Kernel {
         // entirely at this point; state.startupEmitted is already true from point 2 either way.
         // boards is like cupsonline in that its own definite signal (point 7) can already have
         // arrived - its WebSocket connects in the background right after the synchronous auth in
-        // Start() - so it only moves to Connecting here if it isn't Connected yet.
+        // Start() - so it only moves to Connecting here if it isn't Connected yet. avito is the same:
+        // its Start() only launches the room sockets, whose own ready lines (point 9) can come first.
         // Stream mode prints its own "Running as CLIENT (stream mux over <transport>, SOCKS5 on
         // ...)" once streamproxy.Start (the carrier's Start() included) has returned - the same
         // point in its startup, over the same two carriers' own signals.
         if (lower.contains("running as client (socks5 on") || lower.contains("running as client (stream mux over")) {
             state.startupEmitted = true
-            if (transport == "boards") {
+            if (transport == "boards" || transport == "avito") {
                 if (CoreServiceState.status.value !is CoreStatus.Connected && canUpdateConnectingStatus()) {
                     markConnecting()
                 }
@@ -689,6 +704,37 @@ object OpenFluxKernel : Kernel {
                     state.startupFailed = true
                     return true
                 }
+            }
+        }
+
+        // 9. Avito (transport/avito/avito.go). Start() only splits the room list into send and
+        // receive rooms and launches a WebSocket per room, so its own "[AVITO] transport started"
+        // says nothing yet. Each room logs "WS ready: <id>" once subscribed and "ws error (<id>)"
+        // when it drops, then redials on its own forever (100ms backoff growing to 10s). Rooms
+        // are tracked by those lines: any one up means the link is (the striped link spreads
+        // over whichever are alive), none means Connecting until one is back. Rooms that never
+        // come up are left to the connecting watchdog, like Telemost.
+        if (transport == "avito") {
+            val ready = AVITO_READY_REGEX.find(line)
+            val dropped = if (ready == null) AVITO_WS_ERROR_REGEX.find(line) else null
+            if (ready != null) {
+                state.avitoReadyRooms.add(ready.groupValues[1])
+                if (CoreServiceState.status.value !is CoreStatus.Suppressed) {
+                    CoreServiceState.setStatus(CoreStatus.Connected)
+                    ctx.updateNotification(ctx.getString(R.string.core_active))
+                }
+                state.startupEmitted = true
+            } else if (dropped != null) {
+                if (ctx.isNetworkMissingAndHandled()) {
+                    state.startupFailed = true
+                    return true
+                }
+                state.avitoReadyRooms.remove(dropped.groupValues[1])
+                if (state.avitoReadyRooms.isEmpty()) {
+                    ctx.setLastFailureReason(ctx.getString(R.string.error_openflux_avito_rooms_unreachable))
+                    if (canUpdateConnectingStatus()) markConnecting()
+                }
+                state.startupEmitted = true
             }
         }
 
