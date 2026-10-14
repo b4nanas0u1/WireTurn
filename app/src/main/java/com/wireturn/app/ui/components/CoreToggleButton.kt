@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
@@ -406,7 +405,12 @@ private fun CoreToggleButtonInternal(
             interactionSource = interactionSource,
             modifier = Modifier
                 .size(surfaceSize)
-                .scale(scale.value)
+                // Read in the draw phase: .scale(scale.value) read it during composition and
+                // recomposed the button on every frame of the press animation.
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }
                 .clip(animatedShape),
             shape = animatedShape,
             color = containerColor,

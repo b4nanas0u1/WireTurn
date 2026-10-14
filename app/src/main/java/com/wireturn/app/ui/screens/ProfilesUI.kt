@@ -795,12 +795,14 @@ fun ProfilesDialog(
         val isFirstLoad = oldSize == 0 && profilesSource.isNotEmpty()
 
         if (draggedItemId == null && (profiles.size != profilesSource.size || profiles.toList() != profilesSource)) {
-            val updatedOrNewIds = if (oldSize > 0) {
-                profilesSource.filter { newP ->
-                    val oldP = profiles.find { it.id == newP.id }
-                    oldP == null || oldP != newP
-                }.map { it.id }
+            // One lookup map instead of a find() per profile: with a subscription of hundreds of
+            // profiles the nested scan was tens of thousands of deep equals() on the main thread
+            // for every refresh.
+            val updatedOrNew = if (oldSize > 0) {
+                val oldById = profiles.associateBy { it.id }
+                profilesSource.filter { newP -> oldById[newP.id] != newP }
             } else emptyList()
+            val updatedOrNewIds = updatedOrNew.map { it.id }
 
             androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
                 profiles.clear()
@@ -809,9 +811,7 @@ fun ProfilesDialog(
 
             if (updatedOrNewIds.isNotEmpty()) {
                 // Если профили принадлежат подписке, подсвечиваем и её заголовок (даже если подписка не новая).
-                val subIdsToHighlight = updatedOrNewIds.mapNotNull { id ->
-                    profilesSource.find { it.id == id }?.subscriptionId
-                }.distinct()
+                val subIdsToHighlight = updatedOrNew.mapNotNull { it.subscriptionId }.distinct()
                 
                 val allToHighlight = (updatedOrNewIds + subIdsToHighlight).distinct()
                 highlightedIds.addAll(allToHighlight)

@@ -109,6 +109,13 @@ private object AppExceptionsDefaults {
     val SearchBarCompressTransition = 24.dp
 }
 
+// App icons decoded at the size they're drawn (not the drawable's own, up to 432px for an
+// adaptive icon), kept across rows scrolling out and back in - each one used to be decoded again
+// every time its row reappeared. Keyed by package and pixel size; bounded by bytes.
+private val appIconCache = object : android.util.LruCache<String, androidx.compose.ui.graphics.ImageBitmap>(8 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: androidx.compose.ui.graphics.ImageBitmap): Int = value.width * value.height * 4
+}
+
 data class AppInfo(
     val packageName: String,
     val name: String,
@@ -865,12 +872,16 @@ private fun AppListItem(
             .padding(horizontal = 16.dp)
             .padding(bottom = 2.dp)
     ) {
-        var iconBitmap by remember(app.packageName) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-        LaunchedEffect(app.packageName) {
+        val iconSizePx = with(LocalDensity.current) { AppExceptionsDefaults.IconSize.roundToPx() }
+        val iconKey = "${app.packageName}@$iconSizePx"
+        var iconBitmap by remember(iconKey) { mutableStateOf(appIconCache.get(iconKey)) }
+        LaunchedEffect(iconKey) {
+            if (iconBitmap != null) return@LaunchedEffect
             withContext(Dispatchers.IO) {
                 try {
                     val drawable = context.packageManager.getApplicationIcon(app.packageName)
-                    val bitmap = drawable.toBitmap().asImageBitmap()
+                    val bitmap = drawable.toBitmap(iconSizePx, iconSizePx).asImageBitmap()
+                    appIconCache.put(iconKey, bitmap)
                     withContext(Dispatchers.Main) {
                         iconBitmap = bitmap
                     }
