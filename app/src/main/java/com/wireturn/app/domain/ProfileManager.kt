@@ -280,7 +280,7 @@ class ProfileManager(
                                         val count = (failure?.count ?: 0) + 1
                                         autoUpdateFailures[sub.id] = AutoUpdateFailure(System.currentTimeMillis(), count)
                                         val nextMinutes = autoUpdateRetryDelayMs(count, intervalMs) / 60_000L
-                                        com.wireturn.app.AppLogsState.addLog("Subscription auto-update failed, next try in $nextMinutes min")
+                                        com.wireturn.app.AppLogsState.addLog("Subscription auto-update failed (${subscriptionLogLabel(sub.id, sub.url)}), next try in $nextMinutes min")
                                     }
                                 }
                             }
@@ -290,6 +290,12 @@ class ProfileManager(
             }
         }
     }
+
+    // The subscription's name, or the URL's host while it has none yet (a first import).
+    private fun subscriptionLogLabel(subId: String?, url: String): String =
+        subscriptions.value.find { it.id == subId }?.name?.takeIf { it.isNotBlank() }
+            ?: runCatching { URL(url).host }.getOrNull()?.takeIf { it.isNotBlank() }
+            ?: "?"
 
     // 5, 10, 20, 40, 80 minutes after consecutive failures, never past the subscription's own interval.
     private fun autoUpdateRetryDelayMs(failures: Int, intervalMs: Long): Long =
@@ -629,6 +635,8 @@ class ProfileManager(
         val subIdToMark = forceId ?: subscriptions.value.find { it.url == url }?.id
         subIdToMark?.let { id -> _updatingSubIds.update { it + id } }
         val startTime = System.currentTimeMillis()
+        // Which subscription a log line is about. Never the URL: it usually carries the access token.
+        val logLabel = subscriptionLogLabel(subIdToMark, url)
 
         // The network security config permits cleartext app-wide (it has to, for arbitrary LAN
         // subscription servers), so a non-local http:// is gated here: a new one needs the user's
@@ -637,11 +645,11 @@ class ProfileManager(
         // serve nothing else.
         if (url.startsWith("http://", ignoreCase = true) && !isLocalNetworkHost(url)) {
             if (!allowInsecureHttp && subscriptions.value.none { it.url == url }) {
-                com.wireturn.app.AppLogsState.addLog("Subscription: cleartext HTTP to a non-local host needs confirmation")
+                com.wireturn.app.AppLogsState.addLog("Subscription ($logLabel): cleartext HTTP to a non-local host needs confirmation")
                 subIdToMark?.let { id -> _updatingSubIds.update { it - id } }
                 return@withContext ImportStatus.InsecureHttp(url)
             }
-            com.wireturn.app.AppLogsState.addLog("Subscription Warning: cleartext HTTP to a non-local host")
+            com.wireturn.app.AppLogsState.addLog("Subscription Warning ($logLabel): cleartext HTTP to a non-local host")
         }
 
         val proxy = activeLocalSocksProxy()
@@ -672,7 +680,7 @@ class ProfileManager(
         } catch (e: Exception) {
             // Covers both "no proxy, direct attempt failed" and "proxy failed, direct fallback also failed" -
             // previously these could throw past this point uncaught, permanently killing the auto-update loop.
-            com.wireturn.app.AppLogsState.addLog("Subscription Error: ${e.javaClass.simpleName} - ${e.message}")
+            com.wireturn.app.AppLogsState.addLog("Subscription Error ($logLabel): ${e.javaClass.simpleName} - ${e.message}")
             subIdToMark?.let { id -> _updatingSubIds.update { it - id } }
             return@withContext failureStatus(e)
         }
@@ -690,12 +698,12 @@ class ProfileManager(
             val result = try {
                 val responseCode = connection.responseCode
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    com.wireturn.app.AppLogsState.addLog("Subscription HTTP Error: $responseCode")
+                    com.wireturn.app.AppLogsState.addLog("Subscription HTTP Error ($logLabel): $responseCode")
                     ImportStatus.ServerError(responseCode)
                 } else {
                     val content = connection.inputStream.bufferedReader().use { it.readText() }
                     if (content.isBlank()) {
-                        com.wireturn.app.AppLogsState.addLog("Subscription Error: Empty response")
+                        com.wireturn.app.AppLogsState.addLog("Subscription Error ($logLabel): Empty response")
                         ImportStatus.EmptyResponse
                     } else {
                         kotlinx.coroutines.yield() // Check for cancellation
@@ -800,7 +808,7 @@ class ProfileManager(
             result
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            com.wireturn.app.AppLogsState.addLog("Subscription Error: ${e.javaClass.simpleName} - ${e.message}")
+            com.wireturn.app.AppLogsState.addLog("Subscription Error ($logLabel): ${e.javaClass.simpleName} - ${e.message}")
             failureStatus(e)
         } finally {
             subIdToMark?.let { id -> _updatingSubIds.update { it - id } }
