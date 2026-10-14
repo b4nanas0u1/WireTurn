@@ -195,6 +195,9 @@ fun isLocalNetworkHost(url: String): Boolean {
     return a == 10 || a == 127 || (a == 172 && b in 16..31) || (a == 192 && b == 168) || (a == 169 && b == 254)
 }
 
+// First retry after a failed subscription auto-update; doubles per failure, see ProfileManager.
+private const val AUTO_UPDATE_RETRY_BASE_MS = 5 * 60_000L
+
 class ProfileManager(
     private val prefs: AppPreferences,
     private val scope: CoroutineScope
@@ -238,6 +241,12 @@ class ProfileManager(
         startAutoUpdateLoop()
     }
 
+    // Failed auto-updates by subscription id: when the last one failed and how many in a row.
+    // updatedAt only moves on success, so without this a subscription that kept failing was
+    // retried - and logged a timeout - every minute. In memory only: a restart retries at once.
+    private data class AutoUpdateFailure(val at: Long, val count: Int)
+    private val autoUpdateFailures = java.util.concurrent.ConcurrentHashMap<String, AutoUpdateFailure>()
+
     private fun startAutoUpdateLoop() {
         scope.launch(Dispatchers.IO) {
             while (true) {
@@ -245,18 +254,35 @@ class ProfileManager(
                 val now = System.currentTimeMillis()
                 val curId = currentProfileId.value
                 val curProfiles = profiles.value
-                
+
                 subscriptions.value.forEach { sub ->
-                    if (sub.autoUpdate) {
+                    if (sub.autoUpdate && sub.id !in _updatingSubIds.value) {
                         val isSelected = curId != "default" && curProfiles.find { it.id == curId }?.subscriptionId == sub.id
                         val isTunnelActive = activeLocalSocksProxy() != java.net.Proxy.NO_PROXY
                         val shouldUpdate = (!sub.onlyUpdateIfSelected || isSelected) &&
                                            (!sub.requireTunnelForUpdate || isTunnelActive)
-                        
+
                         if (shouldUpdate) {
                             val intervalMs = sub.updateIntervalMinutes.toLong() * 60_000L
-                            if (now - sub.updatedAt >= intervalMs) {
-                                launch { fetchSubscription(sub.url, forceId = sub.id) }
+                            // A success since the last failure (a manual refresh too) clears it.
+                            val failure = autoUpdateFailures[sub.id]?.takeIf { it.at > sub.updatedAt }
+                            val due = if (failure == null) {
+                                now - sub.updatedAt >= intervalMs
+                            } else {
+                                now - failure.at >= autoUpdateRetryDelayMs(failure.count, intervalMs)
+                            }
+                            if (due) {
+                                launch {
+                                    val status = fetchSubscription(sub.url, forceId = sub.id)
+                                    if (status is ImportStatus.Success) {
+                                        autoUpdateFailures.remove(sub.id)
+                                    } else {
+                                        val count = (failure?.count ?: 0) + 1
+                                        autoUpdateFailures[sub.id] = AutoUpdateFailure(System.currentTimeMillis(), count)
+                                        val nextMinutes = autoUpdateRetryDelayMs(count, intervalMs) / 60_000L
+                                        com.wireturn.app.AppLogsState.addLog("Subscription auto-update failed, next try in $nextMinutes min")
+                                    }
+                                }
                             }
                         }
                     }
@@ -264,6 +290,10 @@ class ProfileManager(
             }
         }
     }
+
+    // 5, 10, 20, 40, 80 minutes after consecutive failures, never past the subscription's own interval.
+    private fun autoUpdateRetryDelayMs(failures: Int, intervalMs: Long): Long =
+        (AUTO_UPDATE_RETRY_BASE_MS shl (failures - 1).coerceIn(0, 4)).coerceAtMost(intervalMs)
 
     fun selectProfile(id: String, profile: Profile? = null, onConfigLoaded: (Profile) -> Unit) {
         val targetProfile = profile ?: profiles.value.find { it.id == id } ?: return
