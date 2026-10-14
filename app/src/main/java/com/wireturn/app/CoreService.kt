@@ -247,7 +247,7 @@ class CoreService : Service() {
         xrayConfig: com.wireturn.app.data.XrayConfig,
         profileName: String?
     ) {
-        if (AppLogsState.logs.value.isNotEmpty()) {
+        if (!AppLogsState.isEmpty()) {
             AppLogsState.addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
         val safeProfileName = profileName?.take(50) ?: "-"
@@ -390,7 +390,7 @@ class CoreService : Service() {
                         stopBinaryProcessGracefully()
 
                         delay(3_000.milliseconds)
-                        if (isActive && !userStopped.get()) {
+                        if (this@launch.isActive && !userStopped.get()) {
                             withContext(Dispatchers.Main) { stopSelf() }
                         }
                         return@collect

@@ -783,30 +783,32 @@ fun HomeScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val currentPing = proxyPing
-                                    val infiniteTransition =
-                                        rememberInfiniteTransition(label = "ping_pulse")
-                                    val pulseAlpha by infiniteTransition.animateFloat(
-                                        initialValue = 0.3f,
-                                        targetValue = 0.9f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(1000, easing = LinearEasing),
-                                            repeatMode = RepeatMode.Reverse
-                                        ),
-                                        label = "pulse_alpha"
-                                    )
 
                                     when (currentPing) {
                                         is MainViewModel.PingResult.Loading -> {
+                                            // Only while measuring: an infinite transition ticks on
+                                            // every frame for as long as it's composed, so outside
+                                            // this branch it woke the main thread ~60 times a second
+                                            // on an idle home screen. The alpha is applied in the
+                                            // draw phase, never read during composition.
+                                            val pulseAlpha by rememberInfiniteTransition(label = "ping_pulse").animateFloat(
+                                                initialValue = 0.3f,
+                                                targetValue = 0.9f,
+                                                animationSpec = infiniteRepeatable(
+                                                    animation = tween(1000, easing = LinearEasing),
+                                                    repeatMode = RepeatMode.Reverse
+                                                ),
+                                                label = "pulse_alpha"
+                                            )
                                             if (lastSuccessPing != null) {
                                                 VerticalAnimatedText(
                                                     text = stringResource(
                                                         R.string.ping_ms,
                                                         lastSuccessPing!!.ms
                                                     ),
+                                                    modifier = Modifier.graphicsLayer { alpha = pulseAlpha },
                                                     style = MaterialTheme.typography.labelMedium,
-                                                    color = (if (lastSuccessPing!!.ms < 1100) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error).copy(
-                                                        alpha = pulseAlpha
-                                                    ),
+                                                    color = if (lastSuccessPing!!.ms < 1100) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
                                                     fontWeight = FontWeight.Bold,
                                                     contentAlignment = Alignment.Center
                                                 )

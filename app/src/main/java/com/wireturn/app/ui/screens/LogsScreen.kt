@@ -86,11 +86,13 @@ fun LogsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val logs by viewModel.logs.collectAsStateWithLifecycle()
+    // Read through .value only where the lines themselves are needed (the list, the effects,
+    // click handlers): this screen's root and its top bar don't recompose for every new batch.
+    val logsState = viewModel.logs.collectAsStateWithLifecycle()
+    val hasLogs by remember { derivedStateOf { logsState.value.isNotEmpty() } }
     val minLevel by viewModel.logsMinLevel.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    var lastLogId by remember { mutableStateOf(logs.lastOrNull()?.id) }
     var showScrollButton by remember { mutableStateOf(false) }
     // Whether new lines scroll the list to the end. Only the user's own scrolling changes it:
     // deciding from where the list sits when new lines land broke under a flood of output - the
@@ -98,6 +100,7 @@ fun LogsScreen(
     var followTail by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        val logs = logsState.value
         if (logs.isNotEmpty()) {
             listState.scrollToItem(logs.lastIndex)
         }
@@ -131,19 +134,22 @@ fun LogsScreen(
         }
     }
 
-    LaunchedEffect(logs) {
-        val currentLastId = logs.lastOrNull()?.id
-        if (currentLastId == null) showScrollButton = false
-        // Ids only grow, so a smaller or equal last id isn't new output - it's the buffer being
-        // trimmed (raising the log level drops stored lines, possibly including the last one).
-        if (currentLastId != null && currentLastId > (lastLogId ?: -1L)) {
-            if (followTail) {
-                listState.scrollToItem(logs.lastIndex)
-            } else {
-                showScrollButton = true
+    LaunchedEffect(Unit) {
+        var lastLogId = logsState.value.lastOrNull()?.id
+        snapshotFlow { logsState.value }.collect { logs ->
+            val currentLastId = logs.lastOrNull()?.id
+            if (currentLastId == null) showScrollButton = false
+            // Ids only grow, so a smaller or equal last id isn't new output - it's the buffer being
+            // trimmed (raising the log level drops stored lines, possibly including the last one).
+            if (currentLastId != null && currentLastId > (lastLogId ?: -1L)) {
+                if (followTail) {
+                    listState.scrollToItem(logs.lastIndex)
+                } else {
+                    showScrollButton = true
+                }
             }
+            lastLogId = currentLastId
         }
-        lastLogId = currentLastId
     }
 
     LaunchedEffect(isAtBottom) {
@@ -171,7 +177,7 @@ fun LogsScreen(
                             scope.launch(Dispatchers.IO) {
                                 try {
                                     context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                                        outputStream.write(logs.joinToString("\n") { it.message }.toByteArray())
+                                        outputStream.write(logsState.value.joinToString("\n") { it.message }.toByteArray())
                                     }
                                     withContext(Dispatchers.Main) {
                                         HapticUtil.perform(context, HapticUtil.Pattern.SUCCESS)
@@ -192,7 +198,7 @@ fun LogsScreen(
                             HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
                             viewModel.clearLogs()
                         },
-                        enabled = logs.isNotEmpty()
+                        enabled = hasLogs
                     ) {
                         Icon(
                             painterResource(R.drawable.delete_24px),
@@ -205,12 +211,12 @@ fun LogsScreen(
                             val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
                             saveLauncher.launch("wireturn_logs_$timestamp.txt")
                         },
-                        enabled = logs.isNotEmpty()
+                        enabled = hasLogs
                     ) {
                         Icon(
                             painterResource(R.drawable.save_24px),
                             contentDescription = stringResource(R.string.save),
-                            tint = if (logs.isNotEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.disabled)
+                            tint = if (hasLogs) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.disabled)
                         )
                     }
                 }
@@ -231,7 +237,7 @@ fun LogsScreen(
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        if (logs.isEmpty()) {
+        if (!hasLogs) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -260,7 +266,7 @@ fun LogsScreen(
                         .navigationBarsPadding(),
                     contentPadding = PaddingValues(bottom = 148.dp)
                 ) {
-                    items(logs, key = { it.id }) { entry ->
+                    items(logsState.value, key = { it.id }) { entry ->
                         LogLine(entry = entry)
                     }
                 }
@@ -279,6 +285,7 @@ fun LogsScreen(
                         onClick = {
                             followTail = true
                             scope.launch {
+                                val logs = logsState.value
                                 if (logs.isNotEmpty()) {
                                     listState.animateScrollToItem(logs.lastIndex)
                                 }
