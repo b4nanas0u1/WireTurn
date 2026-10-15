@@ -1319,7 +1319,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            val showXray = xrayConfig.enabled
+            val showXray = xrayOn
 
             fun formatProxyAddr(
                 addr: String,
