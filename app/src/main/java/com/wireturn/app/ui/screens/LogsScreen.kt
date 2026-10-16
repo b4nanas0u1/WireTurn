@@ -369,7 +369,9 @@ private fun LogLevelFilterButton(
 
 private val SUCCESS_KEYWORDS = listOf(
     "запущен", "подключен", "success", "started", "established", "connected",
-    "received handshake", "peer online", "turn allocation up"
+    "received handshake", "peer online", "turn allocation up",
+    // vless-client's DPI route switching to ByeDPI ("DPI route: unavailable" doesn't contain it).
+    "dpi route: available"
 )
 
 @Composable
