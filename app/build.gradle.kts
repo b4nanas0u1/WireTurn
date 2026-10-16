@@ -173,11 +173,12 @@ fun Exec.wslOrBash(script: String) {
 // C/CMake binaries (hev-socks5-tunnel) — doNotTrackState to avoid symlink issues on Windows
 tasks.register<Exec>("buildCBinaries") {
     group = "build"
-    description = "Compiles hev-socks5-tunnel (C/Makefile) for Android"
+    description = "Compiles hev-socks5-tunnel and ByeDPI (C) for Android"
     workingDir = rootDir
     doNotTrackState("hev-socks5-tunnel contains symlinks that Gradle cannot snapshot on Windows")
     listOf("arm64-v8a", "x86_64", "armeabi-v7a", "x86").forEach { abi ->
         outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libhevsocks5.so"))
+        outputs.file(file("${projectDir}/src/main/jniLibs/$abi/libbyedpi.so"))
     }
     configureNdk()
     wslOrBash("./build.sh cmake")

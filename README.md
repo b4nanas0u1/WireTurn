@@ -88,6 +88,7 @@ WireTurn упаковывает трафик в стандартные прот�
 - `libsocks2tun.so` — SOCKS5 поверх TUN-only ядер, [spkprsnts/socks2tun](https://github.com/spkprsnts/socks2tun)
 - `libxray.so` — [spkprsnts/vless-client](https://github.com/spkprsnts/vless-client)
 - `libhevsocks5.so` — сетевой стек VPN-режима, [heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
+- `libbyedpi.so` — обход DPI для выбранных сайтов в обход туннеля, [hufrea/byedpi](https://github.com/hufrea/byedpi)
 
 ## Для разработчиков
 
@@ -117,6 +118,7 @@ git clone --recursive https://github.com/spkprsnts/WireTurn.git
 - [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) — проект OpenFlux.
 - [amurcanov/csqtt](https://github.com/amurcanov/csqtt) — проект CSQTT (лицензия PolyForm Noncommercial 1.0.0, только некоммерческое использование).
 - [spkprsnts/socks2tun](https://github.com/spkprsnts/socks2tun) — SOCKS5 для TUN-only ядер.
+- [hufrea/byedpi](https://github.com/hufrea/byedpi) — ByeDPI.
 - [XTLS/Xray-core](https://github.com/XTLS/Xray-core) — кодовая база Xray.
 - [heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) — реализация сетевого стека для VPN-режима.
 

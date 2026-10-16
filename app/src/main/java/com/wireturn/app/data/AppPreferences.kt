@@ -140,6 +140,10 @@ class AppPreferences(val context: Context) {
         val XRAY_FAKEDNS = booleanPreferencesKey("xray_fakedns")
         val XRAY_FRAGMENT = booleanPreferencesKey("xray_fragment")
         val XRAY_GEO_VARIANT = stringPreferencesKey("xray_geo_variant")
+        val XRAY_DPI_BYPASS = booleanPreferencesKey("xray_dpi_bypass")
+        val XRAY_DPI_BYPASS_ARGS = stringPreferencesKey("xray_dpi_bypass_args")
+        val XRAY_DPI_BYPASS_ROUTE = stringPreferencesKey("xray_dpi_bypass_route")
+        val XRAY_DPI_BYPASS_PORT = stringPreferencesKey("xray_dpi_bypass_port")
 
         val ACTIVE_KERNEL_JSON = stringPreferencesKey("active_kernel_json")
         val ACTIVE_XRAY_CONFIG_TYPE = stringPreferencesKey("active_xray_config_type")
@@ -315,7 +319,11 @@ class AppPreferences(val context: Context) {
                 routeBlock = p[XRAY_ROUTE_BLOCK] ?: "",
                 fakeDns = p[XRAY_FAKEDNS] ?: false,
                 fragment = p[XRAY_FRAGMENT] ?: false,
-                geoVariant = p[XRAY_GEO_VARIANT] ?: "runetfreedom"
+                geoVariant = p[XRAY_GEO_VARIANT] ?: "runetfreedom",
+                dpiBypass = p[XRAY_DPI_BYPASS] ?: false,
+                dpiBypassArgs = p[XRAY_DPI_BYPASS_ARGS] ?: com.wireturn.app.ByeDpi.DEFAULT_ARGS,
+                dpiBypassRoute = p[XRAY_DPI_BYPASS_ROUTE] ?: com.wireturn.app.ByeDpi.DEFAULT_ROUTE,
+                dpiBypassPort = p[XRAY_DPI_BYPASS_PORT] ?: ""
             )
         }.distinctUntilChanged()
 
@@ -578,6 +586,10 @@ class AppPreferences(val context: Context) {
             it[XRAY_FAKEDNS] = s.fakeDns
             it[XRAY_FRAGMENT] = s.fragment
             it[XRAY_GEO_VARIANT] = s.geoVariant
+            it[XRAY_DPI_BYPASS] = s.dpiBypass
+            it[XRAY_DPI_BYPASS_ARGS] = s.dpiBypassArgs
+            it[XRAY_DPI_BYPASS_ROUTE] = s.dpiBypassRoute
+            it[XRAY_DPI_BYPASS_PORT] = s.dpiBypassPort
         }
     }
 

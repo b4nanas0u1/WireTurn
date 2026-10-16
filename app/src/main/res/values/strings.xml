@@ -512,6 +512,9 @@
     <string name="log_xray_starting">* [Xray] Starting: %1$s</string>
     <string name="log_xray_exited">* [Xray] Process exited with code %1$d</string>
     <string name="log_xray_error">* [Xray] Error: %1$s</string>
+    <string name="log_byedpi_starting">* [ByeDPI] Starting: %1$s</string>
+    <string name="log_byedpi_exited">* [ByeDPI] Process exited with code %1$d</string>
+    <string name="log_byedpi_failed">* [ByeDPI] Didn\'t start, Xray runs without the DPI bypass route: %1$s</string>
     <string name="log_xray_stopped_by_user">* [Xray] Stopped</string>
     <string name="log_xray_watchdog_limit">* [Xray] Watchdog limit reached (%1$d)</string>
     <string name="log_xray_watchdog_restart">* [Xray] Restarting in %1$dms (attempt %2$d/%3$d)</string>
@@ -694,7 +697,7 @@
     <string name="connection_settings_title">Advanced Settings</string>
     <string name="connection_settings_desc">Tunnel addresses, DNS, Xray and VPN settings</string>
     <string name="xray_settings_title">Xray Settings</string>
-    <string name="xray_settings_desc">DNS, routing and other advanced Xray options</string>
+    <string name="xray_settings_desc">DNS, routing, DPI bypass with ByeDPI and other advanced Xray options</string>
     <string name="xray_settings_group_dns">DNS</string>
     <string name="xray_settings_dns_label">DNS servers</string>
     <string name="xray_settings_dns_desc">Comma-separated, used by Xray to resolve domains through the tunnel</string>
@@ -710,6 +713,16 @@
     <string name="xray_settings_group_dpi">DPI bypass</string>
     <string name="xray_settings_fragment_label">TLS fragmentation</string>
     <string name="xray_settings_fragment_desc">Split the TLS handshake of direct connections to the server so DPI can\'t read the domain</string>
+    <string name="xray_settings_byedpi_label" translatable="false">ByeDPI</string>
+    <string name="xray_settings_byedpi_desc">Send the sites below straight out through ByeDPI instead of the tunnel. When direct internet isn\'t available (whitelists), they go through the tunnel</string>
+    <string name="xray_settings_byedpi_route_label">Sites</string>
+    <string name="xray_settings_byedpi_route_desc">geosite:name, geoip:name, a domain or CIDR, comma-separated. Empty — YouTube and Discord domains, no geo files needed</string>
+    <string name="xray_settings_byedpi_route_placeholder">YouTube, Discord</string>
+    <string name="xray_settings_byedpi_args_label">Strategy</string>
+    <string name="xray_settings_byedpi_args_desc">ByeDPI options, as in ByeByeDPI\'s command-line mode. A strategy for your network can be found with the ByeByeDPI app\'s proxy test. No address or port here, the port is set below</string>
+    <string name="xray_settings_byedpi_port_label">Port</string>
+    <string name="xray_settings_byedpi_port_placeholder">Automatic</string>
+    <string name="xray_settings_byedpi_port_desc">Optional: a fixed port on 127.0.0.1 (1024–65535). Empty — a free one on every start</string>
     <string name="xray_settings_group_geo">Geo resources</string>
     <string name="geo_resources_dialog_desc">Needed for geosite:/geoip: entries in the routing rules above</string>
     <string name="geo_variant_runetfreedom" translatable="false">RunetFreedom</string>

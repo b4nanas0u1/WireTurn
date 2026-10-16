@@ -250,12 +250,54 @@ build_hev_tunnel() {
     done
 }
 
+# ByeDPI (ciadpi): plain C, no dependencies - its Makefile only lists the sources, and running it
+# per ABI would leave .o files in the shared source tree. One NDK clang call per ABI instead,
+# built as a PIE executable named lib*.so so the package manager extracts it like the others.
+build_byedpi() {
+    local dir=$1; local out_name=$2
+    echo "Checking $out_name..."
+    cd "$ROOT_DIR/$dir"
+
+    local needs_build=0
+    for abi in $ALL_ABIS; do
+        local out="$JNI_LIBS_DIR/$abi/$out_name"
+        if [ ! -f "$out" ]; then
+            needs_build=1
+            break
+        fi
+        if [ "$CI" = "true" ]; then
+            [ "$(cat "$(ci_hash_file "$ROOT_DIR/$dir" "$out")" 2>/dev/null)" != "$(git rev-parse HEAD 2>/dev/null)" ] && needs_build=1 && break
+        else
+            [ -n "$(find . -maxdepth 1 \( -name '*.c' -o -name '*.h' \) -newer "$out" -print -quit)" ] && needs_build=1 && break
+        fi
+    done
+    [ "$needs_build" = "0" ] && return 0
+
+    local sources="packets.c main.c conev.c proxy.c desync.c mpool.c extend.c"
+    for abi in $ALL_ABIS; do
+        IFS=';' read -r _ target _ <<< "${ARCH_MAP[$abi]}"
+        local out="$JNI_LIBS_DIR/$abi/$out_name"
+        mkdir -p "$JNI_LIBS_DIR/$abi"
+        echo "  → $abi"
+        "$TOOLCHAIN/${target}${MIN_SDK}-clang" \
+            -D_DEFAULT_SOURCE -I. -std=c99 -O2 -fPIE -pie -s \
+            -Wall -Wno-unused -Wextra -Wno-unused-parameter \
+            $sources -o "$out"
+        [ "$CI" = "true" ] && git rev-parse HEAD > "$(ci_hash_file "$ROOT_DIR/$dir" "$out")"
+    done
+    cd "$ROOT_DIR"
+}
+
 # 5. Build the selected targets (TARGET was resolved near the top of the script)
 git submodule sync || true
 
 if [ "$TARGET" = "all" ] || [ "$TARGET" = "cmake" ]; then
     [ ! -f "external/hev-socks5-tunnel/Android.mk" ] && git submodule update --init --recursive external/hev-socks5-tunnel
     build_hev_tunnel "external/hev-socks5-tunnel" "libhevsocks5.so"
+    # build_hev_tunnel ends inside its submodule's own repository.
+    cd "$ROOT_DIR"
+    git submodule update --init --force external/byedpi
+    build_byedpi "external/byedpi" "libbyedpi.so"
 fi
 
 if [ "$TARGET" = "all" ] || [ "$TARGET" = "go" ]; then

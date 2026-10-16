@@ -33,6 +33,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class XrayService : Service() {
 
     private val process = AtomicReference<Process?>()
+    // ByeDPI for the current Xray run (see startByeDpi) - started before Xray, stopped with it.
+    private val byeDpiProcess = AtomicReference<Process?>()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var xrayJob: kotlinx.coroutines.Job? = null
     private val userStopped = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -229,6 +231,17 @@ class XrayService : Service() {
             if (xraySettings.fragment) {
                 cmdArgs.addAll(listOf("-fragment", "tlshello,100-200,10-20"))
             }
+            // The DPI bypass route: vless-client sends dpiBypassRoute through ByeDPI while its own
+            // check finds that path working, and into the tunnel otherwise (see ByeDpi).
+            if (xraySettings.dpiBypass) {
+                startByeDpi(xraySettings)?.let { address ->
+                    cmdArgs.addAll(listOf("-dpi-socks", address))
+                    // Blank: vless-client's own built-in YouTube and Discord list (see ByeDpi.DEFAULT_ROUTE).
+                    if (xraySettings.dpiBypassRoute.isNotBlank()) {
+                        cmdArgs.addAll(listOf("-route-dpi", xraySettings.dpiBypassRoute))
+                    }
+                }
+            }
             // Xray answers the VPN's DNS itself (dns-out, see HevVpnService.buildConfigYaml). With
             // IPv6 off the tun has no v6 address, so a v6 connection bypasses it entirely - AAAA
             // answers would send apps with their own resolver straight out, past the tunnel.
@@ -356,6 +369,7 @@ class XrayService : Service() {
             AppLogsState.addLog(getString(R.string.log_xray_error, e.message ?: "Unknown"))
         } finally {
             process.set(null)
+            stopByeDpi()
             XrayServiceState.updateStatsSocketName(null)
             
             // Only set Idle if we are NOT being cancelled by a new start command
@@ -377,6 +391,58 @@ class XrayService : Service() {
                 scheduleWatchdogRestart(snapshot)
             }
         }
+    }
+
+    /**
+     * Starts ciadpi on loopback (the fixed port, or a free one) for this Xray run and returns its address, or null
+     * when it couldn't start - Xray then runs without the DPI route, everything in the tunnel.
+     * A strategy ciadpi rejects makes it exit at once, so it gets a moment to do so first.
+     */
+    private suspend fun startByeDpi(settings: XraySettings): String? {
+        // The previous run's ciadpi must be gone before a fixed port is bound again.
+        byeDpiProcess.getAndSet(null)?.let { previous ->
+            previous.destroyForcibly()
+            withContext(Dispatchers.IO) { previous.waitFor(1, java.util.concurrent.TimeUnit.SECONDS) }
+        }
+        return try {
+            // A fixed port already taken makes ciadpi exit at once - reported below like any other failure.
+            val port = ByeDpi.listenPort(settings.dpiBypassPort)
+            val args = listOf("${applicationInfo.nativeLibraryDir}/libbyedpi.so", "-i", "127.0.0.1", "-p", port.toString()) +
+                ByeDpi.userArgs(settings.dpiBypassArgs)
+            AppLogsState.addLog(getString(R.string.log_byedpi_starting, args.drop(1).joinToString(" ")))
+            val proc = withContext(Dispatchers.IO) { ProcessBuilder(args).redirectErrorStream(true).start() }
+            byeDpiProcess.set(proc)
+            serviceScope.launch {
+                try {
+                    proc.inputStream.bufferedReader().forEachLine { line ->
+                        AppLogsState.addLog("* [ByeDPI] ${AppLogsState.stripAnsi(line)}")
+                    }
+                } catch (_: Exception) { }
+                val code = proc.waitFor()
+                // Not when stopped on purpose (stopByeDpi clears the reference first).
+                if (byeDpiProcess.compareAndSet(proc, null)) {
+                    AppLogsState.addLog(getString(R.string.log_byedpi_exited, code))
+                }
+            }
+            delay(300.milliseconds)
+            if (!proc.isAlive) {
+                AppLogsState.addLog(getString(R.string.log_byedpi_failed, "exit ${proc.exitValue()}"))
+                null
+            } else {
+                "127.0.0.1:$port"
+            }
+        } catch (e: CancellationException) {
+            stopByeDpi()
+            throw e
+        } catch (e: Exception) {
+            AppLogsState.addLog(getString(R.string.log_byedpi_failed, e.message ?: "Unknown"))
+            stopByeDpi()
+            null
+        }
+    }
+
+    private fun stopByeDpi() {
+        byeDpiProcess.getAndSet(null)?.destroyForcibly()
     }
 
     // xray-core's [Info] is per-connection chatter (dispatcher detours, inbound requests) - the
@@ -467,6 +533,7 @@ class XrayService : Service() {
         handler.removeCallbacksAndMessages(null)
         xrayJob?.cancel()
         process.getAndSet(null)?.destroyForcibly()
+        stopByeDpi()
 
         // CoreService.startVpnSupervisor() reacts to this and either falls back to the
         // OLCRTC/WEBDAV core's own socks5 (if eligible) or stops VPN mode - not decided here.

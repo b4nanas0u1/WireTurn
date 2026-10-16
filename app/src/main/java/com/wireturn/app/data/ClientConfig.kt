@@ -284,7 +284,16 @@ data class XraySettings(
     // -fragment, see XrayService) so DPI can't read the SNI from a single packet.
     val fragment: Boolean = false,
     // Which geoip.dat/geosite.dat variant is currently installed - see GeoAssetsManager.
-    val geoVariant: String = "runetfreedom"
+    val geoVariant: String = "runetfreedom",
+    // ByeDPI next to Xray (see ByeDpi, XrayService): dpiBypassRoute is sent straight out through
+    // it instead of into the tunnel, while vless-client's check finds that path working.
+    val dpiBypass: Boolean = false,
+    // ciadpi's own options (its desync strategy), as in ByeByeDPI's command-line mode.
+    val dpiBypassArgs: String = com.wireturn.app.ByeDpi.DEFAULT_ARGS,
+    // vless-client -route-dpi entries, same format as routeDirect.
+    val dpiBypassRoute: String = com.wireturn.app.ByeDpi.DEFAULT_ROUTE,
+    // A fixed loopback port for ByeDPI (another app may need its own); blank = a free one each start.
+    val dpiBypassPort: String = ""
 ) {
     fun fillDefaults(): XraySettings {
         val cleanedUser = ValidatorUtils.cleanProxyString(proxyUser)
@@ -304,7 +313,10 @@ data class XraySettings(
             proxyPass = cleanedPass,
             dns = dns.trim().ifBlank { DEFAULT_DNS },
             routeDirect = (routeDirect as Any?)?.toString()?.trim() ?: "",
-            routeBlock = (routeBlock as Any?)?.toString()?.trim() ?: ""
+            routeBlock = (routeBlock as Any?)?.toString()?.trim() ?: "",
+            dpiBypassArgs = (dpiBypassArgs as Any?)?.toString()?.trim()?.ifBlank { null } ?: com.wireturn.app.ByeDpi.DEFAULT_ARGS,
+            dpiBypassRoute = (dpiBypassRoute as Any?)?.toString()?.trim() ?: com.wireturn.app.ByeDpi.DEFAULT_ROUTE,
+            dpiBypassPort = (dpiBypassPort as Any?)?.toString()?.trim()?.takeIf { com.wireturn.app.ByeDpi.isValidPort(it) } ?: ""
         )
 
         if (current.isProxyAuthEnabled && (current.proxyUser.isBlank() || current.proxyPass.isBlank())) {

@@ -28,3 +28,6 @@
 [submodule "external/socks2tun"]
 	path = external/socks2tun
 	url = https://github.com/spkprsnts/socks2tun.git
+[submodule "external/byedpi"]
+	path = external/byedpi
+	url = https://github.com/hufrea/byedpi.git

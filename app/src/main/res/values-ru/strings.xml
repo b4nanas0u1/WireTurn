@@ -461,6 +461,9 @@
     <string name="log_xray_starting">* [Xray] Запуск: %1$s</string>
     <string name="log_xray_exited">* [Xray] Процесс завершился с кодом %1$d</string>
     <string name="log_xray_error">* [Xray] Ошибка: %1$s</string>
+    <string name="log_byedpi_starting">* [ByeDPI] Запуск: %1$s</string>
+    <string name="log_byedpi_exited">* [ByeDPI] Процесс завершился с кодом %1$d</string>
+    <string name="log_byedpi_failed">* [ByeDPI] Не запустился, Xray работает без маршрута обхода DPI: %1$s</string>
     <string name="log_xray_stopped_by_user">* [Xray] Остановлено</string>
     <string name="log_xray_watchdog_limit">* [Xray] Лимит попыток watchdog достигнут (%1$d)</string>
     <string name="log_xray_watchdog_restart">* [Xray] Перезапуск через %1$dмс (попытка %2$d/%3$d)</string>
@@ -623,7 +626,7 @@
     <string name="connection_settings_title">Расширенные настройки</string>
     <string name="connection_settings_desc">Адреса туннеля, DNS, настройки Xray и VPN</string>
     <string name="xray_settings_title">Настройки Xray</string>
-    <string name="xray_settings_desc">DNS, маршрутизация и другие параметры Xray</string>
+    <string name="xray_settings_desc">DNS, маршрутизация, обход DPI через ByeDPI и другие параметры Xray</string>
     <string name="xray_settings_group_dns">DNS</string>
     <string name="xray_settings_dns_label">DNS-серверы</string>
     <string name="xray_settings_dns_desc">Через запятую, используются Xray для резолва доменов через туннель</string>
@@ -637,6 +640,15 @@
     <string name="xray_settings_group_dpi">Обход DPI</string>
     <string name="xray_settings_fragment_label">Фрагментация TLS</string>
     <string name="xray_settings_fragment_desc">Дробить TLS-рукопожатие прямых подключений к серверу, чтобы DPI не видел домен</string>
+    <string name="xray_settings_byedpi_desc">Отправлять сайты ниже напрямую через ByeDPI вместо туннеля. Если прямой интернет недоступен (белые списки), они идут через туннель</string>
+    <string name="xray_settings_byedpi_route_label">Сайты</string>
+    <string name="xray_settings_byedpi_route_desc">geosite:имя, geoip:имя, домен или CIDR через запятую. Пусто — домены YouTube и Discord, гео-файлы не нужны</string>
+    <string name="xray_settings_byedpi_route_placeholder">YouTube, Discord</string>
+    <string name="xray_settings_byedpi_args_label">Стратегия</string>
+    <string name="xray_settings_byedpi_args_desc">Параметры ByeDPI, как в режиме командной строки ByeByeDPI. Подобрать стратегию под свою сеть можно в приложении ByeByeDPI (тест прокси). Адрес и порт здесь не указываются, порт задаётся ниже</string>
+    <string name="xray_settings_byedpi_port_label">Порт</string>
+    <string name="xray_settings_byedpi_port_placeholder">Автоматически</string>
+    <string name="xray_settings_byedpi_port_desc">Необязательно: постоянный порт на 127.0.0.1 (1024–65535). Пусто — свободный при каждом запуске</string>
     <string name="xray_settings_group_geo">Гео-ресурсы</string>
     <string name="geo_resources_dialog_desc">Нужны для записей geosite:/geoip: в правилах маршрутизации выше</string>
     <string name="geo_variant_runetfreedom_desc">Домены/IP, заблокированные в России (Роскомнадзор), обновляется каждые 6ч</string>

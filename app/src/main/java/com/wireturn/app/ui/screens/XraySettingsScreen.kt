@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
@@ -63,6 +65,7 @@ import com.wireturn.app.R
 import com.wireturn.app.data.XraySettings
 import com.wireturn.app.domain.GeoResourceSet
 import com.wireturn.app.ui.AppTopAppBar
+import com.wireturn.app.ByeDpi
 import com.wireturn.app.ui.ExpandableSection
 import com.wireturn.app.ui.HapticUtil
 import com.wireturn.app.ui.ItemPosition
@@ -109,6 +112,10 @@ fun XraySettingsScreen(
     var routeBlock by remember { mutableStateOf(initialXraySettings.routeBlock) }
     var fakeDns by remember { mutableStateOf(initialXraySettings.fakeDns) }
     var fragment by remember { mutableStateOf(initialXraySettings.fragment) }
+    var dpiBypass by remember { mutableStateOf(initialXraySettings.dpiBypass) }
+    var dpiBypassArgs by remember { mutableStateOf(initialXraySettings.dpiBypassArgs) }
+    var dpiBypassRoute by remember { mutableStateOf(initialXraySettings.dpiBypassRoute) }
+    var dpiBypassPort by remember { mutableStateOf(initialXraySettings.dpiBypassPort) }
 
     val showGeoDialog = remember { mutableStateOf(false) }
     val showDeleteGeoConfirm = remember { mutableStateOf(false) }
@@ -130,7 +137,7 @@ fun XraySettingsScreen(
 
     val currentXraySettings = remember(
         xraySocks, xrayHttp, xrayAuth, xrayUser, xrayPass,
-        dns, routeDirect, routeBlock, fakeDns, fragment, initialXraySettings
+        dns, routeDirect, routeBlock, fakeDns, fragment, dpiBypass, dpiBypassArgs, dpiBypassRoute, dpiBypassPort, initialXraySettings
     ) {
         initialXraySettings.copy(
             socksBindAddress = xraySocks,
@@ -142,7 +149,11 @@ fun XraySettingsScreen(
             routeDirect = routeDirect,
             routeBlock = routeBlock,
             fakeDns = fakeDns,
-            fragment = fragment
+            fragment = fragment,
+            dpiBypass = dpiBypass,
+            dpiBypassArgs = dpiBypassArgs,
+            dpiBypassRoute = dpiBypassRoute,
+            dpiBypassPort = dpiBypassPort
         )
     }
 
@@ -156,7 +167,11 @@ fun XraySettingsScreen(
         currentXraySettings.routeDirect != initialXraySettings.routeDirect ||
         currentXraySettings.routeBlock != initialXraySettings.routeBlock ||
         currentXraySettings.fakeDns != initialXraySettings.fakeDns ||
-        currentXraySettings.fragment != initialXraySettings.fragment
+        currentXraySettings.fragment != initialXraySettings.fragment ||
+        currentXraySettings.dpiBypass != initialXraySettings.dpiBypass ||
+        currentXraySettings.dpiBypassArgs != initialXraySettings.dpiBypassArgs ||
+        currentXraySettings.dpiBypassRoute != initialXraySettings.dpiBypassRoute ||
+        currentXraySettings.dpiBypassPort != initialXraySettings.dpiBypassPort
     }
 
     val showExitDialog = remember { mutableStateOf(false) }
@@ -410,7 +425,7 @@ fun XraySettingsScreen(
 
             SectionGroup(title = stringResource(R.string.xray_settings_group_dpi)) {
                 SectionItem(
-                    position = ItemPosition.Single,
+                    position = ItemPosition.Top,
                     onClick = {
                         fragment = !fragment
                         HapticUtil.perform(
@@ -426,6 +441,68 @@ fun XraySettingsScreen(
                         onCheckedChange = { fragment = it },
                         isModified = fragment != initialXraySettings.fragment
                     )
+                }
+
+                SectionItem(
+                    position = if (dpiBypass) ItemPosition.Middle else ItemPosition.Bottom,
+                    onClick = {
+                        dpiBypass = !dpiBypass
+                        HapticUtil.perform(
+                            context,
+                            if (dpiBypass) HapticUtil.Pattern.TOGGLE_ON else HapticUtil.Pattern.TOGGLE_OFF
+                        )
+                    }
+                ) {
+                    SwitchRow(
+                        label = stringResource(R.string.xray_settings_byedpi_label),
+                        supportingText = stringResource(R.string.xray_settings_byedpi_desc),
+                        checked = dpiBypass,
+                        onCheckedChange = { dpiBypass = it },
+                        isModified = dpiBypass != initialXraySettings.dpiBypass
+                    )
+                }
+
+                ExpandableSection(visible = dpiBypass) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        SectionItem(position = ItemPosition.Middle) {
+                            TextFieldRow(
+                                label = stringResource(R.string.xray_settings_byedpi_route_label),
+                                value = dpiBypassRoute,
+                                onValueChange = { dpiBypassRoute = it },
+                                placeholder = stringResource(R.string.xray_settings_byedpi_route_placeholder),
+                                supportingText = stringResource(R.string.xray_settings_byedpi_route_desc),
+                                isModified = dpiBypassRoute != initialXraySettings.dpiBypassRoute,
+                                singleLine = false,
+                                minLines = 1,
+                                maxLines = 5
+                            )
+                        }
+                        SectionItem(position = ItemPosition.Middle) {
+                            TextFieldRow(
+                                label = stringResource(R.string.xray_settings_byedpi_args_label),
+                                value = dpiBypassArgs,
+                                onValueChange = { dpiBypassArgs = it },
+                                placeholder = ByeDpi.DEFAULT_ARGS,
+                                supportingText = stringResource(R.string.xray_settings_byedpi_args_desc),
+                                isModified = dpiBypassArgs != initialXraySettings.dpiBypassArgs,
+                                singleLine = false,
+                                minLines = 1,
+                                maxLines = 5
+                            )
+                        }
+                        SectionItem(position = ItemPosition.Bottom) {
+                            TextFieldRow(
+                                label = stringResource(R.string.xray_settings_byedpi_port_label),
+                                value = dpiBypassPort,
+                                onValueChange = { value -> dpiBypassPort = value.filter(Char::isDigit).take(5) },
+                                placeholder = stringResource(R.string.xray_settings_byedpi_port_placeholder),
+                                supportingText = stringResource(R.string.xray_settings_byedpi_port_desc),
+                                isError = dpiBypassPort.isNotEmpty() && !ByeDpi.isValidPort(dpiBypassPort),
+                                isModified = dpiBypassPort != initialXraySettings.dpiBypassPort,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                        }
+                    }
                 }
             }
 
