@@ -1,5 +1,4 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
 )
 
@@ -1054,7 +1053,8 @@ fun SwitchRow(
 
     // Auto-disable internal clickable if we are inside a SettingsGroupItem that handles the interaction source,
     // or if we have an explicit onRowClick.
-    val actualClickable = if (onRowClick != null || isSplit) false else if (parentInteractionSource != null && interactionSource == null) false else clickable
+    val actualClickable = onRowClick == null && !isSplit &&
+        (parentInteractionSource == null || interactionSource != null) && clickable
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

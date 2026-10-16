@@ -74,12 +74,12 @@ object WebdavKernel : Kernel {
             appendLine("  - url: \"${esc(o.webdav)}\"")
             appendLine("    login: \"${esc(o.login)}\"")
             appendLine("    password: \"${esc(o.password)}\"")
-            for (backend in o.backends) {
+            for ((_, url, login, password) in o.backends) {
                 // BackendConfig (external/webdav-tunnel config.go) only has url/login/password -
                 // the label is purely a local display name, not sent to the tunnel binary.
-                appendLine("  - url: \"${esc(backend.url)}\"")
-                appendLine("    login: \"${esc(backend.login)}\"")
-                appendLine("    password: \"${esc(backend.password)}\"")
+                appendLine("  - url: \"${esc(url)}\"")
+                appendLine("    login: \"${esc(login)}\"")
+                appendLine("    password: \"${esc(password)}\"")
             }
 
             appendLine("tuning:")

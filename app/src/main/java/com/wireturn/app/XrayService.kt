@@ -185,8 +185,7 @@ class XrayService : Service() {
                 vless = if (isXrayVless) vlessConfig else null,
                 settings = xraySettings
             ))
-            
-            val prefs = AppPreferences(this@XrayService)
+
             val socketName = "sys.ipc.${java.util.UUID.randomUUID().toString().replace("-", "").take(12)}"
 
             val cmdArgs = mutableListOf(
@@ -274,11 +273,8 @@ class XrayService : Service() {
             }
 
             if (isXrayVless) {
-                val shouldAddLink = if (isSocks5Native) {
-                    (vlessConfig.isDualRoute || vlessConfig.isSocks5Chain) && vlessConfig.vlessLink.isNotBlank()
-                } else {
-                    true
-                }
+                val shouldAddLink = !isSocks5Native ||
+                    ((vlessConfig.isDualRoute || vlessConfig.isSocks5Chain) && vlessConfig.vlessLink.isNotBlank())
 
                 if (shouldAddLink) {
                     cmdArgs.addAll(listOf("-link", vlessConfig.vlessLink))

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 object AppLogsState {
 
@@ -39,7 +40,7 @@ object AppLogsState {
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             for (request in publishRequests) {
                 publish()
-                delay(PUBLISH_INTERVAL_MS)
+                delay(PUBLISH_INTERVAL_MS.milliseconds)
             }
         }
     }

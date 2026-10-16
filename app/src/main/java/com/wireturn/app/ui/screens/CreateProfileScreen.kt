@@ -42,7 +42,6 @@ import com.wireturn.app.ui.SectionItem
 import com.wireturn.app.ui.TextFieldRow
 import com.wireturn.app.ui.noFlingExpandConnection
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun CreateProfileScreen(
     viewModel: com.wireturn.app.viewmodel.MainViewModel,

@@ -14,11 +14,11 @@ enum class UriProtocol { VLESS, TROJAN, HYSTERIA2 }
 
 object ValidatorUtils {
     fun isValidHost(input: String): Boolean {
-        if (input.isBlank()) return false
-        
-        return InetAddresses.isInetAddress(input) || 
+        return input.isNotBlank() && (
+            InetAddresses.isInetAddress(input) ||
                 PatternsCompat.DOMAIN_NAME.matcher(input).matches() ||
                 input.equals("localhost", ignoreCase = true)
+            )
     }
 
     fun isValidPort(input: String): Boolean {
@@ -49,8 +49,7 @@ object ValidatorUtils {
     }
 
     fun isValidHostPort(input: String): Boolean {
-        if (input.isBlank()) return false
-        return try {
+        return input.isNotBlank() && try {
             val hp = HostAndPort.fromString(input)
             hp.hasPort() && isValidHost(hp.host) && isValidPort(hp.port.toString())
         } catch (_: Exception) {
@@ -101,8 +100,7 @@ object ValidatorUtils {
      * Проверяет, является ли строка валидной VLESS-ссылкой. Пустая строка считается невалидной.
      */
     fun isValidVlessLink(input: String): Boolean {
-        if (input.isBlank()) return false
-        return try {
+        return input.isNotBlank() && try {
             val uri = input.toUri()
             detectUriProtocol(input) != null &&
                     !uri.userInfo.isNullOrBlank() &&
@@ -131,8 +129,7 @@ object ValidatorUtils {
      * Пустая строка считается невалидной.
      */
     fun isValidUrl(input: String): Boolean {
-        if (input.isBlank()) return false
-        return try {
+        return input.isNotBlank() && try {
             val uri = input.toUri()
             (uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)) &&
                     !uri.host.isNullOrBlank()
@@ -142,13 +139,12 @@ object ValidatorUtils {
     }
 
     fun isValidProxyUser(input: String): Boolean {
-        if (input.isBlank()) return true
-        return input.all { it in 'a'..'z' || it in 'A'..'Z' || it.isDigit() || it == '-' || it == '_' || it == '.' } && input.length >= 3
+        return input.isBlank() ||
+            (input.all { it in 'a'..'z' || it in 'A'..'Z' || it.isDigit() || it == '-' || it == '_' || it == '.' } && input.length >= 3)
     }
 
     fun isValidProxyPass(input: String): Boolean {
-        if (input.isBlank()) return true
-        return input.length >= 3
+        return input.isBlank() || input.length >= 3
     }
 
     fun cleanProxyString(input: String): String {
@@ -156,9 +152,8 @@ object ValidatorUtils {
     }
 
     fun isValidUuid4(input: String): Boolean {
-        if (input.isBlank()) return false
         val regex = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
-        return regex.matches(input)
+        return input.isNotBlank() && regex.matches(input)
     }
 
     /**

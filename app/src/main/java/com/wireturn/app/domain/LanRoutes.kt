@@ -1,5 +1,7 @@
 package com.wireturn.app.domain
 
+import com.wireturn.app.domain.LanRoutes.LAN_V4
+import com.wireturn.app.domain.LanRoutes.LAN_V6
 import java.math.BigInteger
 import java.net.InetAddress
 

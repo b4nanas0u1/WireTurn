@@ -1,6 +1,7 @@
 package com.wireturn.app.kernel
 
 import android.content.Context
+import androidx.core.net.toUri
 import com.wireturn.app.R
 import com.wireturn.app.data.ClientConfig
 import com.wireturn.app.data.KernelConfig
@@ -8,7 +9,6 @@ import com.wireturn.app.data.KernelVariant
 import com.wireturn.app.data.kernel.XrayLinkConfig
 import com.wireturn.app.ui.ValidatorUtils
 import com.wireturn.app.ui.activities.kernel.XrayLinkConfigActivity
-import androidx.core.net.toUri
 
 // A profile with no tunnel kernel: Xray alone, straight to the server in the profile's own link.
 // CoreService runs nothing for it (runsBinary) - XrayService takes the link from the kernel config

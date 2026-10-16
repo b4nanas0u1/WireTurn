@@ -1,5 +1,4 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
 )
 
@@ -337,12 +336,11 @@ fun HomeScreen(
     }
     var hasNotificationPermission by remember {
         mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(
                     context,
                     "android.permission.POST_NOTIFICATIONS"
                 ) == PackageManager.PERMISSION_GRANTED
-            } else true
         )
     }
 
@@ -782,9 +780,7 @@ fun HomeScreen(
                                         .offset(y = 1.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val currentPing = proxyPing
-
-                                    when (currentPing) {
+                                    when (val currentPing = proxyPing) {
                                         is MainViewModel.PingResult.Loading -> {
                                             // Only while measuring: an infinite transition ticks on
                                             // every frame for as long as it's composed, so outside
@@ -1319,8 +1315,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            val showXray = xrayOn
-
             fun formatProxyAddr(
                 addr: String,
                 user: String,
@@ -1336,13 +1330,13 @@ fun HomeScreen(
             }
 
             val displaySocksAddr = when {
-                showXray -> activeXraySettings.socksBindAddress
+                xrayOn -> activeXraySettings.socksBindAddress
                 isSocks5Native -> activeConfig.socksAddr
                 else -> activeXraySettings.socksBindAddress
             }
 
             val copySocksAddr = when {
-                showXray -> formatProxyAddr(
+                xrayOn -> formatProxyAddr(
                     activeXraySettings.socksBindAddress,
                     activeXraySettings.proxyUser,
                     activeXraySettings.proxyPass,
@@ -1368,13 +1362,13 @@ fun HomeScreen(
             }
 
             val displayHttpAddr = when {
-                showXray -> activeXraySettings.httpBindAddress
+                xrayOn -> activeXraySettings.httpBindAddress
                 isSocks5Native -> ""
                 else -> activeXraySettings.httpBindAddress
             }
 
             val copyHttpAddr = when {
-                showXray -> formatProxyAddr(
+                xrayOn -> formatProxyAddr(
                     activeXraySettings.httpBindAddress,
                     activeXraySettings.proxyUser,
                     activeXraySettings.proxyPass,
@@ -1391,19 +1385,19 @@ fun HomeScreen(
             }
 
             val isSocksModified = when {
-                showXray -> xraySession != null && activeXraySettings.socksBindAddress != xraySession?.settings?.socksBindAddress
+                xrayOn -> xraySession != null && activeXraySettings.socksBindAddress != xraySession?.settings?.socksBindAddress
                 isSocks5Native -> proxySession != null && activeConfig.socksAddr != proxySession?.clientConfig?.socksAddr
                 else -> xraySession != null && activeXraySettings.socksBindAddress != xraySession?.settings?.socksBindAddress
             }
 
             val isHttpModified = when {
-                showXray -> xraySession != null && activeXraySettings.httpBindAddress != xraySession?.settings?.httpBindAddress
+                xrayOn -> xraySession != null && activeXraySettings.httpBindAddress != xraySession?.settings?.httpBindAddress
                 else -> false
             }
 
             SectionGroup(
                 modifier = Modifier.graphicsLayer {
-                    alpha = if (showXray || isSocks5Native) 1f else 0.38f
+                    alpha = if (xrayOn || isSocks5Native) 1f else 0.38f
                 }
             ) {
                 val clipboard = LocalClipboard.current
@@ -1441,7 +1435,7 @@ fun HomeScreen(
 
                 SectionItem(
                     position = ItemPosition.Top,
-                    enabled = showXray || isSocks5Native,
+                    enabled = xrayOn || isSocks5Native,
                     onClick = {
                         if (privacyMode) return@SectionItem
                         HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
@@ -1467,7 +1461,7 @@ fun HomeScreen(
                             Icon(
                                 painter = painterResource(R.drawable.lan_24px),
                                 contentDescription = null,
-                                tint = if (showXray || isSocks5Native) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                tint = if (xrayOn || isSocks5Native) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                     alpha = 0.38f
                                 )
                             )
@@ -1489,7 +1483,7 @@ fun HomeScreen(
                     }
 
                     SectionItem(
-                        enabled = showXray,
+                        enabled = xrayOn,
                         onClick = {
                             if (privacyMode) return@SectionItem
                             HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
@@ -1518,7 +1512,7 @@ fun HomeScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.lan_24px),
                                     contentDescription = null,
-                                    tint = if (showXray) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    tint = if (xrayOn) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                         alpha = 0.38f
                                     )
                                 )

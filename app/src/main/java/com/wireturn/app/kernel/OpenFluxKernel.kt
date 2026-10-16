@@ -61,14 +61,15 @@ object OpenFluxKernel : Kernel {
     // handshake diagnosis, codec/context fallback) are separate Infof lines.
     override fun isDiscarded(line: String): Boolean {
         val tag = line.indexOf('[')
-        if (tag < 0 || tag > 40) return false
-        return PER_PACKET_TRACES.any { line.startsWith(it, tag) } ||
-            // Boards echoes every object back to its sender, logged per packet as
-            // "[BOARDS] <action>: own echo (...), skip" - the action is a variable, so no prefix.
-            (line.startsWith("[BOARDS] ", tag) && line.contains(": own echo (")) ||
-            // Avito's stats loop logs every room every 5s ("[AVITO-tx-00 <id>] tx=..."); the
-            // "[AVITO-TOTAL]" line after them stays as the one summary, like "[CUPS-TOTAL]".
-            line.startsWith("[AVITO-tx-", tag) || line.startsWith("[AVITO-rx-", tag)
+        return tag in 0..40 && (
+            PER_PACKET_TRACES.any { line.startsWith(it, tag) } ||
+                // Boards echoes every object back to its sender, logged per packet as
+                // "[BOARDS] <action>: own echo (...), skip" - the action is a variable, so no prefix.
+                (line.startsWith("[BOARDS] ", tag) && line.contains(": own echo (")) ||
+                // Avito's stats loop logs every room every 5s ("[AVITO-tx-00 <id>] tx=..."); the
+                // "[AVITO-TOTAL]" line after them stays as the one summary, like "[CUPS-TOTAL]".
+                line.startsWith("[AVITO-tx-", tag) || line.startsWith("[AVITO-rx-", tag)
+            )
     }
 
     private val PER_PACKET_TRACES = listOf(

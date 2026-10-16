@@ -213,7 +213,7 @@ data class ClientConfig(
         )
 
         if (current.isSocksAuthEnabled && (current.socksUser.isBlank() || current.socksPass.isBlank())) {
-            val allowed = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+            val allowed = listOf('A'..'Z', 'a'..'z', '0'..'9').flatten()
             current = current.copy(
                 socksUser = current.socksUser.ifBlank { (1..8).map { allowed.random() }.joinToString("") },
                 socksPass = current.socksPass.ifBlank { (1..12).map { allowed.random() }.joinToString("") }
@@ -320,7 +320,7 @@ data class XraySettings(
         )
 
         if (current.isProxyAuthEnabled && (current.proxyUser.isBlank() || current.proxyPass.isBlank())) {
-            val allowed = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+            val allowed = listOf('A'..'Z', 'a'..'z', '0'..'9').flatten()
             current = current.copy(
                 proxyUser = current.proxyUser.ifBlank { (1..8).map { allowed.random() }.joinToString("") },
                 proxyPass = current.proxyPass.ifBlank { (1..12).map { allowed.random() }.joinToString("") }
