@@ -41,7 +41,6 @@
     <string name="qwdtt_core">Tunnel core (qWDTT)</string>
     <string name="openflux_core">Tunnel core (OpenFlux)</string>
     <string name="csqtt_core">Tunnel core (CSQTT)</string>
-    <string name="paperflux_core">Tunnel core (PaperFlux)</string>
     <string name="socks2tun" translatable="false">socks2tun</string>
     <string name="xray_core_name" translatable="false">vless-client</string>
     <string name="xray_core_original" translatable="false">Xray-core</string>
@@ -133,7 +132,6 @@
     <string name="wg_not_used_with_webdav">WireGuard is not used with WebDAV</string>
     <string name="wg_not_used_with_qwdtt">WireGuard is not used with qWDTT</string>
     <string name="wg_not_used_with_openflux">WireGuard is not used with OpenFlux</string>
-    <string name="wg_not_used_with_paperflux">WireGuard is not used with PaperFlux</string>
     <string name="wg_not_used_with_csqtt">WireGuard is not used with CSQTT</string>
 
     <!-- Xray Setup (SOCKS/HTTP) -->
@@ -192,7 +190,6 @@
     <string name="kernel_freeturn" translatable="false">FreeTurn</string>
     <string name="kernel_qwdtt" translatable="false">qWDTT</string>
     <string name="kernel_openflux" translatable="false">OpenFlux</string>
-    <string name="kernel_paperflux" translatable="false">PaperFlux</string>
     <string name="kernel_csqtt" translatable="false">CSQTT</string>
     <string name="kernel_xray" translatable="false">Xray</string>
     <string name="xray_link_label">URI</string>
@@ -212,19 +209,6 @@
     <string name="openflux_telemost_settings_title">Yandex Telemost</string>
     <string name="openflux_telemost_url_label">Conference link</string>
     <string name="openflux_telemost_url_desc">Telemost conference link shared with the exit node</string>
-    <string name="paperflux_profile_title">Server profile</string>
-    <string name="paperflux_server_label">Server</string>
-    <string name="paperflux_server_desc">IP or domain of the VPS</string>
-    <string name="paperflux_profile_id_label">Profile ID</string>
-    <string name="paperflux_token_label">Access key</string>
-    <string name="paperflux_token_desc">The profile key from the server (32-128 characters), not the SSH password</string>
-    <string name="paperflux_client_ip_label">Virtual IP</string>
-    <string name="paperflux_client_ip_desc">The client address the server assigned to the profile</string>
-    <string name="paperflux_documents_label">Documents</string>
-    <string name="paperflux_documents_desc_yandex">One or two Yandex Docs links, one per line - two run in parallel</string>
-    <string name="paperflux_documents_desc">Link to the document shared with the server</string>
-    <string name="paperflux_volga_label">Volga document</string>
-    <string name="paperflux_volga_desc">Optional: a separate empty editable Yandex document for the Volga fallback lane</string>
     <string name="openflux_cups_url_label">Room list</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport cupsonline)</string>
     <string name="openflux_avito_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport avito)</string>
@@ -585,7 +569,6 @@
     <string name="error_openflux_yandex_wrong_doc">Document only works via Volga</string>
     <string name="error_openflux_doc_not_found">Document not found</string>
     <string name="error_openflux_telemost_not_found">Telemost conference not found</string>
-    <string name="error_paperflux_volga_mismatch">Document type doesn\'t match the server</string>
     <string name="error_openflux_yandex_captcha">Yandex requires a captcha</string>
     <string name="error_openflux_yandex_login">Document requires a Yandex login</string>
     <string name="error_openflux_cups_rooms_gone">Cups rooms are closed</string>
@@ -675,7 +658,6 @@
     <string name="kernel_tag_video_obfs" translatable="false">Video Obfs</string>
     <string name="kernel_tag_qr" translatable="false">QR</string>
     <string name="kernel_tag_tile" translatable="false">Tile</string>
-    <string name="kernel_tag_volga" translatable="false">Volga</string>
     <string name="kernel_tag_manual_captcha" translatable="false">Manual Captcha</string>
     <string name="kernel_tag_no_server" translatable="false">Serverless</string>
 

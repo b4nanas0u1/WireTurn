@@ -73,6 +73,11 @@ class AppPreferences(val context: Context) {
         .create()
 
     companion object {
+        // Kernels removed from the app, by their stored profile "type" and active-snapshot variant -
+        // see removeDiscontinuedKernelProfiles.
+        private val DISCONTINUED_KERNEL_TYPES = setOf("paperflux")
+        private val DISCONTINUED_KERNEL_VARIANTS = setOf("PAPERFLUX")
+
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
         val PROFILES_JSON = stringPreferencesKey("profiles_json")
         val SUBSCRIPTIONS_JSON = stringPreferencesKey("subscriptions_json")
@@ -282,7 +287,6 @@ class AppPreferences(val context: Context) {
                     KernelVariant.OPENFLUX -> KernelConfig.OpenFlux(snap.openflux ?: OpenFluxConfig())
                     KernelVariant.CSQTT -> KernelConfig.Csqtt(snap.csqtt ?: CsqttConfig())
                     KernelVariant.XRAY -> KernelConfig.Xray(snap.xray ?: com.wireturn.app.data.kernel.XrayLinkConfig())
-                    KernelVariant.PAPERFLUX -> KernelConfig.PaperFlux(snap.paperflux ?: com.wireturn.app.data.kernel.PaperFluxConfig())
                 }
             } ?: KernelConfig.Turnable()
             ClientConfig(
@@ -345,7 +349,6 @@ class AppPreferences(val context: Context) {
         is KernelConfig.OpenFlux -> KernelSnapshot(variant = KernelVariant.OPENFLUX.name, openflux = kernelConfig.config)
         is KernelConfig.Csqtt -> KernelSnapshot(variant = KernelVariant.CSQTT.name, csqtt = kernelConfig.config)
         is KernelConfig.Xray -> KernelSnapshot(variant = KernelVariant.XRAY.name, xray = kernelConfig.config)
-        is KernelConfig.PaperFlux -> KernelSnapshot(variant = KernelVariant.PAPERFLUX.name, paperflux = kernelConfig.config)
     }
 
     suspend fun saveFullProfile(id: String, profile: Profile) {
@@ -477,6 +480,51 @@ class AppPreferences(val context: Context) {
     suspend fun clearLegacyVlessLinkHistory() {
         if (appCtx.internalDataStore.data.first()[VLESS_LINK_HISTORY] == null) return
         appCtx.internalDataStore.edit { it.remove(VLESS_LINK_HISTORY) }
+    }
+
+    /**
+     * Drops profiles of kernels the app no longer has (PaperFlux): read through the current
+     * adapter they'd come back as empty Turnable profiles under their old names. An active one is
+     * deactivated too, so startup picks another profile. Works on the raw JSON - the removed
+     * kernel's config class is gone. Returns how many profiles were removed.
+     */
+    suspend fun removeDiscontinuedKernelProfiles(): Int {
+        val removedIds = mutableListOf<String>()
+        var removedCount = 0
+        appCtx.internalDataStore.edit { p ->
+            val stored = p[PROFILES_JSON]
+            if (stored != null) {
+                val array = try { com.google.gson.JsonParser.parseString(stored).asJsonArray } catch (_: Exception) { null }
+                if (array != null) {
+                    val kept = com.google.gson.JsonArray()
+                    array.forEach { element ->
+                        val profile = element.takeIf { it.isJsonObject }?.asJsonObject
+                        val kernel = profile?.get("kernelConfig")?.takeIf { it.isJsonObject }?.asJsonObject
+                        val type = kernel?.get("type")?.takeIf { it.isJsonPrimitive }?.asString
+                        if (type in DISCONTINUED_KERNEL_TYPES) {
+                            removedCount++
+                            profile?.get("id")?.takeIf { it.isJsonPrimitive }?.asString?.let(removedIds::add)
+                        } else {
+                            kept.add(element)
+                        }
+                    }
+                    if (removedCount > 0) p[PROFILES_JSON] = kept.toString()
+                }
+            }
+            val activeVariant = p[ACTIVE_KERNEL_JSON]?.let {
+                try { gson.fromJson(it, KernelSnapshot::class.java)?.variant } catch (_: Exception) { null }
+            }
+            if (activeVariant in DISCONTINUED_KERNEL_VARIANTS) {
+                p.remove(ACTIVE_KERNEL_JSON)
+                p.remove(ACTIVE_XRAY_CONFIG_TYPE)
+                p.remove(ACTIVE_XRAY_ENABLED)
+                p.remove(ACTIVE_WG_JSON)
+                p.remove(ACTIVE_VLESS_JSON)
+                p.remove(CURRENT_PROFILE_ID)
+            }
+        }
+        removeProfileCountries(removedIds)
+        return removedCount
     }
 
     suspend fun saveVpnSettings(s: VpnSettings) {

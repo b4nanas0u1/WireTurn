@@ -174,11 +174,6 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.activities.kernel.PaperFluxConfigActivity"
-            android:theme="@style/Theme.wireturn"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name=".ui.activities.kernel.XrayLinkConfigActivity"
             android:theme="@style/Theme.wireturn"
             android:windowSoftInputMode="adjustResize" />

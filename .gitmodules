@@ -28,7 +28,3 @@
 [submodule "external/socks2tun"]
 	path = external/socks2tun
 	url = https://github.com/spkprsnts/socks2tun.git
-[submodule "external/paperflux"]
-	path = external/paperflux
-	url = https://github.com/spkprsnts/PaperFlux
-	branch = wireturn

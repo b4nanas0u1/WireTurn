@@ -146,12 +146,6 @@ fun CreateProfileScreen(
                     }
                 }
 
-                SectionItem(
-                    onClick = { onSelectType("PaperFlux", null, profileName) }
-                ) {
-                    RowLabel(text = stringResource(R.string.kernel_paperflux))
-                }
-
                 // No tunnel kernel - Xray straight to the server in a vless/trojan/hysteria2 link.
                 SectionItem(
                     position = ItemPosition.Bottom,

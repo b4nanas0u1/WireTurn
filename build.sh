@@ -267,7 +267,6 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "go" ]; then
     git submodule update --init --recursive --force external/proxy-turn-vk-android
     git submodule update --init --recursive --force external/openflux
     git submodule update --init --recursive --force external/socks2tun
-    git submodule update --init --recursive --force external/paperflux
     build_go_project "external/olcrtc"       "libolcrtc.so"     "./cmd/olcrtc"
     build_go_project "external/vless-client"  "libxray.so"      "."
     build_go_project "external/turnable"      "libturnable.so"  "./cmd"
@@ -276,7 +275,6 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "go" ]; then
     build_go_project "external/proxy-turn-vk-android/go_client" "libqwdtt.so" "."
     build_go_project "external/openflux"      "libopenflux.so"  "."
     build_go_project "external/socks2tun"     "libsocks2tun.so" "."
-    build_go_project "external/paperflux"     "libpaperflux.so" "."
 fi
 
 if [ "$TARGET" = "all" ] || [ "$TARGET" = "rust" ]; then

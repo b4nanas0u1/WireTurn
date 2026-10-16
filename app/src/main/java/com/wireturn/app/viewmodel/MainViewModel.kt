@@ -242,6 +242,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _captchaForceTint.value = prefs.captchaForceTintFlow.first()
             _partialCaptchaAlerts.value = prefs.partialCaptchaAlertsFlow.first()
             prefs.clearLegacyVlessLinkHistory()
+            prefs.removeDiscontinuedKernelProfiles().takeIf { it > 0 }?.let {
+                AppLogsState.addLog("PaperFlux is no longer supported: removed $it profile(s)")
+            }
             _appLanguage.value = prefs.appLanguageFlow.first()
             _autoLaunchSettings.value = prefs.autoLaunchSettingsFlow.first()
 
@@ -951,13 +954,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (csqtt != null) return com.wireturn.app.domain.ImportStatus.KernelConfigDetected(
             "CSQTT",
             com.google.gson.Gson().toJson(csqtt),
-            trimmed
-        )
-
-        val paperflux = com.wireturn.app.data.kernel.PaperFluxConfig.parse(trimmed)
-        if (paperflux != null) return com.wireturn.app.domain.ImportStatus.KernelConfigDetected(
-            "PaperFlux",
-            com.google.gson.Gson().toJson(paperflux),
             trimmed
         )
 

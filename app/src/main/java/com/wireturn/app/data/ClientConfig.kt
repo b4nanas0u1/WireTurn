@@ -14,7 +14,6 @@ import com.wireturn.app.data.kernel.CsqttConfig
 import com.wireturn.app.data.kernel.FreeTurnConfig
 import com.wireturn.app.data.kernel.OlcrtcConfig
 import com.wireturn.app.data.kernel.OpenFluxConfig
-import com.wireturn.app.data.kernel.PaperFluxConfig
 import com.wireturn.app.data.kernel.QwdttConfig
 import com.wireturn.app.data.kernel.TurnableConfig
 import com.wireturn.app.data.kernel.WebdavConfig
@@ -57,10 +56,6 @@ class KernelConfigAdapter : JsonDeserializer<KernelConfig>, JsonSerializer<Kerne
                 jsonObject.addProperty("type", "xray")
                 jsonObject.add("config", context.serialize(src.config))
             }
-            is KernelConfig.PaperFlux -> {
-                jsonObject.addProperty("type", "paperflux")
-                jsonObject.add("config", context.serialize(src.config))
-            }
         }
         return jsonObject
     }
@@ -78,25 +73,26 @@ class KernelConfigAdapter : JsonDeserializer<KernelConfig>, JsonSerializer<Kerne
             "openflux" -> KernelConfig.OpenFlux(context.deserialize(configElement, OpenFluxConfig::class.java) ?: OpenFluxConfig())
             "csqtt" -> KernelConfig.Csqtt(context.deserialize(configElement, CsqttConfig::class.java) ?: CsqttConfig())
             "xray" -> KernelConfig.Xray(context.deserialize(configElement, XrayLinkConfig::class.java) ?: XrayLinkConfig())
-            "paperflux" -> KernelConfig.PaperFlux(context.deserialize(configElement, PaperFluxConfig::class.java) ?: PaperFluxConfig())
+            // A removed kernel's ("paperflux") profiles are dropped on startup by
+            // AppPreferences.removeDiscontinuedKernelProfiles before anything reads them here.
             else -> KernelConfig.Turnable()
         }
     }
 }
 
 enum class KernelVariant {
-    TURNABLE, OLCRTC, WEBDAV, FREETURN, QWDTT, OPENFLUX, CSQTT, PAPERFLUX,
+    TURNABLE, OLCRTC, WEBDAV, FREETURN, QWDTT, OPENFLUX, CSQTT,
     // No tunnel kernel at all - Xray connects to the server in the profile's own link (see XrayKernel).
     XRAY;
 
-    /** OLCRTC, WEBDAV, QWDTT, OPENFLUX and PAPERFLUX already speak SOCKS5 themselves (CSQTT through
+    /** OLCRTC, WEBDAV, QWDTT and OPENFLUX already speak SOCKS5 themselves (CSQTT through
      * socks2tun) - Xray's WireGuard overlay is neither needed nor offered in the UI for them. */
     val isSocks5Native: Boolean get() =
-        this == OLCRTC || this == WEBDAV || this == QWDTT || this == OPENFLUX || this == CSQTT || this == PAPERFLUX
+        this == OLCRTC || this == WEBDAV || this == QWDTT || this == OPENFLUX || this == CSQTT
 
-    /** OpenFlux's and PaperFlux's embedded SOCKS5 servers have no auth flags upstream - they never
-     * expect credentials, unlike the other SOCKS5-native kernels. See ClientConfig.socksNativeValidationError. */
-    val socks5SupportsAuth: Boolean get() = this != OPENFLUX && this != PAPERFLUX
+    /** OpenFlux's embedded SOCKS5 server has no auth flags upstream - it never expects
+     * credentials, unlike the other SOCKS5-native kernels. See ClientConfig.socksNativeValidationError. */
+    val socks5SupportsAuth: Boolean get() = this != OPENFLUX
 }
 enum class XrayConfiguration { WIREGUARD, VLESS }
 
@@ -108,7 +104,6 @@ sealed class KernelConfig {
     data class Qwdtt(val config: QwdttConfig = QwdttConfig()) : KernelConfig()
     data class OpenFlux(val config: OpenFluxConfig = OpenFluxConfig()) : KernelConfig()
     data class Csqtt(val config: CsqttConfig = CsqttConfig()) : KernelConfig()
-    data class PaperFlux(val config: PaperFluxConfig = PaperFluxConfig()) : KernelConfig()
     data class Xray(val config: XrayLinkConfig = XrayLinkConfig()) : KernelConfig()
 
     companion object {
@@ -132,8 +127,6 @@ sealed class KernelConfig {
                     OpenFluxConfig.parse(trimmed)?.let { OpenFlux(it) }
                 trimmed.startsWith("csqtt://", ignoreCase = true) ->
                     CsqttConfig.parse(trimmed)?.let { Csqtt(it) }
-                trimmed.startsWith("paperflux://", ignoreCase = true) ->
-                    PaperFluxConfig.parse(trimmed)?.let { PaperFlux(it) }
                 else -> XrayLinkConfig.parse(trimmed)?.let { Xray(it) }
             }
         }
@@ -151,7 +144,6 @@ val KernelConfig.variant: KernelVariant get() = when (this) {
     is KernelConfig.OpenFlux -> KernelVariant.OPENFLUX
     is KernelConfig.Csqtt -> KernelVariant.CSQTT
     is KernelConfig.Xray -> KernelVariant.XRAY
-    is KernelConfig.PaperFlux -> KernelVariant.PAPERFLUX
 }
 
 // Per-kernel display text (name, icon, config screen, ...) lives on each kernel/*/*.kt's Kernel
@@ -237,7 +229,6 @@ data class ClientConfig(
                 is KernelConfig.OpenFlux -> KernelConfig.OpenFlux(k.config.fillDefaults())
                 is KernelConfig.Csqtt -> KernelConfig.Csqtt(k.config.sanitize())
                 is KernelConfig.Xray -> KernelConfig.Xray(k.config.sanitize())
-                is KernelConfig.PaperFlux -> KernelConfig.PaperFlux(k.config.sanitize())
             }
         )
     }
@@ -253,7 +244,6 @@ data class ClientConfig(
         is KernelConfig.OpenFlux -> socksNativeValidationError(k.config.isValid())
         is KernelConfig.Csqtt -> socksNativeValidationError(k.config.isValid())
         is KernelConfig.Xray -> if (!k.config.isValid()) R.string.error_settings_empty else null
-        is KernelConfig.PaperFlux -> socksNativeValidationError(k.config.isValid())
     }
 
     // Shared by every SOCKS5-native kernel: besides its own config being filled in, a public
@@ -488,8 +478,7 @@ internal data class KernelSnapshot(
     @SerializedName("qwdtt") val qwdtt: QwdttConfig? = null,
     @SerializedName("openflux") val openflux: OpenFluxConfig? = null,
     @SerializedName("csqtt") val csqtt: CsqttConfig? = null,
-    @SerializedName("xray") val xray: XrayLinkConfig? = null,
-    @SerializedName("paperflux") val paperflux: PaperFluxConfig? = null
+    @SerializedName("xray") val xray: XrayLinkConfig? = null
 )
 
 data class Profile(
@@ -528,7 +517,6 @@ data class Profile(
     val openFluxConfig: OpenFluxConfig get() = (kernelConfig as? KernelConfig.OpenFlux)?.config ?: OpenFluxConfig()
     val csqttConfig: CsqttConfig get() = (kernelConfig as? KernelConfig.Csqtt)?.config ?: CsqttConfig()
     val xrayLinkConfig: XrayLinkConfig get() = (kernelConfig as? KernelConfig.Xray)?.config ?: XrayLinkConfig()
-    val paperFluxConfig: PaperFluxConfig get() = (kernelConfig as? KernelConfig.PaperFlux)?.config ?: PaperFluxConfig()
 
     fun isEmpty(): Boolean = when (val k = kernelConfig) {
         is KernelConfig.Turnable -> !k.config.isValid()
@@ -539,7 +527,6 @@ data class Profile(
         is KernelConfig.OpenFlux -> !k.config.isValid()
         is KernelConfig.Csqtt -> !k.config.isValid()
         is KernelConfig.Xray -> !k.config.isValid()
-        is KernelConfig.PaperFlux -> !k.config.isValid()
     } && !wgConfig.isValid() && !vlessConfig.isValid()
 
     fun sanitize(defaultName: String = "Profile"): Profile {
@@ -582,7 +569,6 @@ data class Profile(
             is KernelConfig.OpenFlux -> KernelConfig.OpenFlux(currentKc.config.sanitize())
             is KernelConfig.Csqtt -> KernelConfig.Csqtt(currentKc.config.sanitize())
             is KernelConfig.Xray -> KernelConfig.Xray(currentKc.config.sanitize())
-            is KernelConfig.PaperFlux -> KernelConfig.PaperFlux(currentKc.config.sanitize())
         }
 
         return copy(
