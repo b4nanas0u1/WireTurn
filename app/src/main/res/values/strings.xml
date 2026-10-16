@@ -203,12 +203,13 @@
     <string name="openflux_mailru_settings_title">Mail.ru Docs</string>
     <string name="openflux_boards_settings_title">Yandex Boards</string>
     <string name="openflux_url_label">Document URL</string>
-    <string name="openflux_url_desc">Yandex.Docs document URL shared with the exit node</string>
-    <string name="openflux_mailru_url_desc">Mail.ru Docs public document URL shared with the exit node</string>
-    <string name="openflux_boards_url_desc">Yandex Boards board link (with ?hash=) shared with the exit node</string>
+    <string name="openflux_url_desc">Yandex.Docs document URL shared with the exit node. Several, comma-separated, add up into one channel - the node needs the same ones</string>
+    <string name="openflux_mailru_url_desc">Mail.ru Docs public document URL shared with the exit node. Several, comma-separated, add up into one channel - the node needs the same ones</string>
+    <string name="openflux_mailru_stream_url_desc">Mail.ru Docs public document URL shared with the PHP node</string>
+    <string name="openflux_boards_url_desc">Yandex Boards board link (with ?hash=) shared with the exit node. Several, comma-separated, add up into one channel - the node needs the same ones</string>
     <string name="openflux_telemost_settings_title">Yandex Telemost</string>
     <string name="openflux_telemost_url_label">Conference link</string>
-    <string name="openflux_telemost_url_desc">Telemost conference link shared with the exit node</string>
+    <string name="openflux_telemost_url_desc">Telemost conference link shared with the exit node. Several, comma-separated, add up into one channel - the node needs the same ones</string>
     <string name="openflux_cups_url_label">Room list</string>
     <string name="openflux_cups_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport cupsonline)</string>
     <string name="openflux_avito_url_desc" tools:ignore="TypographyDashes">Base64 room list printed by the exit node on startup (--transport avito)</string>

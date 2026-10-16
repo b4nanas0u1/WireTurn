@@ -524,10 +524,13 @@ object OpenFluxKernel : Kernel {
         }
 
         // 4c. Mail.ru Docs transport (transport/mailru/mailru.go, --debug required): same shape
-        // as classic Yandex above - fetchDocInfo/WebSocket dial/read failures inside connectToDoc()
-        // are the only signal, no definite "connected" line of its own beyond "Running as CLIENT"
-        // (point 3), and it reconnects forever on its own with backoff - same silent-spin risk.
+        // as classic Yandex above - connect/read failures inside connectToDoc() are the only
+        // signal, no definite "connected" line of its own beyond "Running as CLIENT" (point 3), and
+        // it reconnects forever on its own with backoff - same silent-spin risk. Since 0.13.0 a
+        // failed fetch or dial is one "connect failed: <error>" line (the fetchDocInfo/dial ones
+        // are gone); a rotated-out carrier closing is "retired carrier closed", not a read error.
         if (transport == "mailru" && (
+                lower.contains("[m-docs] connect failed") ||
                 lower.contains("[m-docs] fetchdocinfo failed") ||
                 lower.contains("[m-docs] websocket dial failed") ||
                 lower.contains("[m-docs] read error")

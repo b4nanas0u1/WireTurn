@@ -410,7 +410,8 @@ fun OpenFluxConfigScreen(
                                     when (config.transport) {
                                         "cupsonline" -> if (config.isStream) R.string.openflux_cups_room_desc else R.string.openflux_cups_url_desc
                                         "avito" -> R.string.openflux_avito_url_desc
-                                        "mailru" -> R.string.openflux_mailru_url_desc
+                                        // The stream mode's carrier is one document, never a group of them.
+                                        "mailru" -> if (config.isStream) R.string.openflux_mailru_stream_url_desc else R.string.openflux_mailru_url_desc
                                         "boards" -> R.string.openflux_boards_url_desc
                                         "telemost" -> R.string.openflux_telemost_url_desc
                                         else -> R.string.openflux_url_desc
@@ -577,7 +578,7 @@ private fun OpenFluxPlatformDialog(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val platforms = listOf("yandex", "vyandex", "boards", "telemost", "oneme", "cupsonline", "avito", "mailru")
+    val platforms = listOf("mailru", "telemost", "boards", "avito", "cupsonline", "oneme", "yandex", "vyandex")
 
     SelectionDialog(
         title = stringResource(R.string.openflux_platform_label),
