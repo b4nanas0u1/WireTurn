@@ -26,6 +26,7 @@ import com.wireturn.app.XrayServiceState
 import com.wireturn.app.data.AppPreferences
 import com.wireturn.app.data.AutoLaunchSettings
 import com.wireturn.app.data.ClientConfig
+import com.wireturn.app.data.KernelConfig
 import com.wireturn.app.data.Profile
 import com.wireturn.app.data.ThemeMode
 import com.wireturn.app.data.VlessConfig
@@ -56,6 +57,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.Proxy
@@ -176,6 +178,99 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val subscriptions: StateFlow<List<com.wireturn.app.data.Subscription>> = profileManager.subscriptions
     val updatingSubIds: StateFlow<Set<String>> = profileManager.updatingSubIds
     val profileCountries: StateFlow<Map<String, String>> = profileManager.profileCountries
+    val profilePings: StateFlow<Map<String, Long>> = profileManager.profilePings
+
+    private val xrayLinkTester = com.wireturn.app.domain.XrayLinkTester(application)
+    private val pingTestJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+    private val _testingSubIds = MutableStateFlow<Set<String>>(emptySet())
+    /** Subscriptions whose Xray profiles are being pinged right now - see [testSubscriptionPings]. */
+    val testingSubIds: StateFlow<Set<String>> = _testingSubIds.asStateFlow()
+    private val _pingingProfileIds = MutableStateFlow<Set<String>>(emptySet())
+    /** Profiles still waiting for their result in a running check - the list shows them as such. */
+    val pingingProfileIds: StateFlow<Set<String>> = _pingingProfileIds.asStateFlow()
+
+    /**
+     * Pings every Xray-only profile of subscription [subId] straight through its server (see
+     * XrayLinkTester) and records each result like a ping measured through the tunnel - a
+     * failure as ProfileManager.PING_FAILED. Profiles on a kernel need their tunnel up to be
+     * tested at all, so they are left as they are.
+     */
+    fun testSubscriptionPings(subId: String) {
+        val targets = xrayPingTargets(profiles.value.filter { it.subscriptionId == subId })
+        val subName = subscriptions.value.find { it.id == subId }?.name.orEmpty()
+        runPingCheck(jobKey = subId, targets = targets, label = subName, subId = subId)
+    }
+
+    /** One Xray-only profile's ping, from its own menu - the same check as for a subscription. */
+    fun testProfilePing(profileId: String) {
+        val profile = profiles.value.find { it.id == profileId } ?: return
+        // Already in a running check (its subscription's, or its own) - that one answers it.
+        if (profileId in _pingingProfileIds.value) return
+        runPingCheck(jobKey = "profile:$profileId", targets = xrayPingTargets(listOf(profile)), label = profile.name, subId = null)
+    }
+
+    private fun xrayPingTargets(list: List<Profile>): List<Pair<String, String>> = list.mapNotNull { p ->
+        val link = (p.kernelConfig as? KernelConfig.Xray)?.config?.link
+        if (!link.isNullOrBlank()) p.id to link else null
+    }
+
+    private fun runPingCheck(jobKey: String, targets: List<Pair<String, String>>, label: String, subId: String?) {
+        if (pingTestJobs[jobKey]?.isActive == true || targets.isEmpty()) return
+        val subName = label
+        if (subId != null) _testingSubIds.update { it + subId }
+        _pingingProfileIds.update { it + targets.map { t -> t.first } }
+        AppLogsState.addLog("Availability check: ${targets.size} profile(s) of \"$subName\"")
+        pingTestJobs[jobKey] = viewModelScope.launch {
+            val pending = mutableMapOf<String, Long>()
+            var lastFlush = System.currentTimeMillis()
+            var ok = 0
+            var failed = 0
+            try {
+                xrayLinkTester.test(
+                    links = targets.map { it.second },
+                    pingUrl = _pingUrl.value.ifBlank { DEFAULT_PING_URL },
+                    settings = xraySettings.value,
+                    useCustomCerts = clientConfig.value.useCustomCerts,
+                    concurrency = xraySettings.value.pingCheckConcurrency
+                ) { index, result ->
+                    val ms = when (result) {
+                        is com.wireturn.app.domain.XrayLinkTester.Result.Ok -> { ok++; result.ms }
+                        is com.wireturn.app.domain.XrayLinkTester.Result.Failed -> { failed++; ProfileManager.PING_FAILED }
+                    }
+                    synchronized(pending) { pending[targets[index].first] = ms }
+                    // A write about once a second, so the list fills in as results come.
+                    if (System.currentTimeMillis() - lastFlush >= 1_000) {
+                        lastFlush = System.currentTimeMillis()
+                        val batch = synchronized(pending) { pending.toMap().also { pending.clear() } }
+                        launch {
+                            profileManager.saveProfilePings(batch)
+                            // Its indicator gives way only once the result is there to replace it.
+                            _pingingProfileIds.update { it - batch.keys }
+                        }
+                    }
+                }
+                AppLogsState.addLog("Availability check of \"$subName\" done: $ok available, $failed unavailable")
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) {
+                    AppLogsState.addLog("Availability check of \"$subName\" stopped")
+                } else {
+                    AppLogsState.addLog("Availability check of \"$subName\" failed: ${e.message}")
+                }
+            } finally {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    profileManager.saveProfilePings(synchronized(pending) { pending.toMap() })
+                }
+                pingTestJobs.remove(jobKey)
+                if (subId != null) _testingSubIds.update { it - subId }
+                // Finished or stopped: whatever didn't answer by now keeps its previous ping.
+                _pingingProfileIds.update { it - targets.map { t -> t.first }.toSet() }
+            }
+        }
+    }
+
+    fun stopSubscriptionPingTest(subId: String) {
+        pingTestJobs[subId]?.cancel()
+    }
 
     val isArchitectureSupported: Boolean = Build.SUPPORTED_ABIS.any {
         it == "arm64-v8a" || it == "x86_64" || it == "armeabi-v7a" || it == "x86"
@@ -578,6 +673,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun checkProxyPing(delayFirst: Boolean = false) {
         pingJob?.cancel()
+        // The profile this measurement belongs to - switching profiles restarts the tunnel and
+        // calls this again, cancelling the job before its result could land on the wrong one.
+        val targetProfileId = currentProfileId.value
         pingJob = viewModelScope.launch {
             _proxyPing.value = PingResult.Loading
             var sawProxy = false
@@ -608,12 +706,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     if (res != null) {
                         _proxyPing.value = res
+                        if (targetProfileId != "default") profileManager.saveProfilePing(targetProfileId, res.ms)
                         return@launch
                     }
                 }
                 delay(1_000.milliseconds)
             }
             _proxyPing.value = if (sawProxy) PingResult.Error else null
+            // The tunnel was up and every attempt through it failed: remembered too, so the list
+            // shows the profile as broken. No proxy at all is no measurement - nothing to record.
+            if (sawProxy && targetProfileId != "default") {
+                profileManager.saveProfilePing(targetProfileId, ProfileManager.PING_FAILED)
+            }
         }
     }
 
@@ -998,6 +1102,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateSubscription(sub: com.wireturn.app.data.Subscription) = profileManager.updateSubscription(sub)
+
+    /** Folds (or unfolds) every subscription in the profile sheet at once - one write. */
+    fun setAllSubscriptionsCollapsed(collapsed: Boolean) = profileManager.updateAllSubscriptions { it.copy(collapsed = collapsed) }
+
+    /** Changes the subscription with [id] as it is now - not a copy a screen held on to. */
+    fun updateSubscriptionById(id: String, transform: (com.wireturn.app.data.Subscription) -> com.wireturn.app.data.Subscription) {
+        subscriptions.value.find { it.id == id }?.let { profileManager.updateSubscription(transform(it)) }
+    }
     
     fun resetAllSettings(c: Context) {
         viewModelScope.launch {

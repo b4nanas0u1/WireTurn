@@ -293,7 +293,9 @@ data class XraySettings(
     // vless-client -route-dpi entries, same format as routeDirect.
     val dpiBypassRoute: String = com.wireturn.app.ByeDpi.DEFAULT_ROUTE,
     // A fixed loopback port for ByeDPI (another app may need its own); blank = a free one each start.
-    val dpiBypassPort: String = ""
+    val dpiBypassPort: String = "",
+    // How many servers a subscription's ping check (XrayLinkTester) tests at once.
+    val pingCheckConcurrency: Int = DEFAULT_PING_CHECK_CONCURRENCY
 ) {
     fun fillDefaults(): XraySettings {
         val cleanedUser = ValidatorUtils.cleanProxyString(proxyUser)
@@ -335,6 +337,8 @@ data class XraySettings(
         const val DEFAULT_SOCKS_BIND_ADDRESS = "127.0.0.1:1080"
         const val DEFAULT_HTTP_BIND_ADDRESS = "127.0.0.1:8080"
         const val DEFAULT_DNS = "8.8.8.8,1.1.1.1"
+        const val DEFAULT_PING_CHECK_CONCURRENCY = 8
+        const val MAX_PING_CHECK_CONCURRENCY = 32
     }
 }
 

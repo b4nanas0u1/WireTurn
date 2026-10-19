@@ -465,6 +465,7 @@
 
     <!-- Ping check -->
     <string name="ping_error">Error</string>
+    <string name="ping_failed_short">Failed</string>
     <string name="ping_ms">%1$d ms</string>
 
     <!-- Errors and system messages -->
@@ -725,6 +726,9 @@
     <string name="xray_settings_byedpi_port_placeholder">Automatic</string>
     <string name="xray_settings_byedpi_port_desc">Optional: a fixed port on 127.0.0.1 (1024–65535). Empty — a free one on every start</string>
     <string name="xray_settings_group_geo">Geo resources</string>
+    <string name="xray_settings_group_ping_check">Availability check</string>
+    <string name="xray_settings_ping_concurrency_label">Servers checked at once</string>
+    <string name="xray_settings_ping_concurrency_desc">For a subscription\'s availability check. More is faster but loads the network and the phone</string>
     <string name="geo_resources_dialog_desc">Needed for geosite:/geoip: entries in the routing rules above</string>
     <string name="geo_variant_runetfreedom" translatable="false">RunetFreedom</string>
     <string name="geo_variant_runetfreedom_desc">Domains/IPs blocked in Russia (Roskomnadzor), updated every 6h</string>
@@ -793,7 +797,19 @@
     <string name="profiles_empty">No profiles yet</string>
 
     <string name="subscription_settings">Subscription settings</string>
+    <string name="subscription_actions">Subscription actions</string>
+    <string name="subscription_pin">Pin to top</string>
+    <string name="subscription_unpin">Unpin</string>
+    <string name="subscription_sort_by_ping">Sort by ping</string>
+    <string name="subscription_collapse">Collapse</string>
+    <string name="subscription_expand">Expand</string>
+    <string name="subscription_pinned">Pinned</string>
+    <string name="subscriptions_collapse_all">Collapse all subscriptions</string>
+    <string name="subscriptions_expand_all">Expand all subscriptions</string>
     <string name="subscription_updated_at">Updated %1$s</string>
+    <string name="subscription_test_ping">Check availability</string>
+    <string name="subscription_test_ping_stop">Stop the check</string>
+    <string name="subscription_testing_ping">Checking availability…</string>
     <string name="subscription_info">Subscription info</string>
     <string name="auto_update">Auto-update</string>
     <string name="auto_update_only_if_selected">Only if selected</string>

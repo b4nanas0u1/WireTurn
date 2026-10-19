@@ -414,6 +414,7 @@
 
     <!-- Проверка задержки (Ping) -->
     <string name="ping_error">Ошибка</string>
+    <string name="ping_failed_short">Неуд.</string>
     <string name="ping_ms">%1$d мс</string>
 
     <!-- Ошибки и системные сообщения -->
@@ -651,6 +652,9 @@
     <string name="xray_settings_byedpi_port_placeholder">Автоматически</string>
     <string name="xray_settings_byedpi_port_desc">Необязательно: постоянный порт на 127.0.0.1 (1024–65535). Пусто — свободный при каждом запуске</string>
     <string name="xray_settings_group_geo">Гео-ресурсы</string>
+    <string name="xray_settings_group_ping_check">Проверка доступности</string>
+    <string name="xray_settings_ping_concurrency_label">Серверов одновременно</string>
+    <string name="xray_settings_ping_concurrency_desc">Для проверки доступности подписки. Больше — быстрее, но сильнее нагружает сеть и телефон</string>
     <string name="geo_resources_dialog_desc">Нужны для записей geosite:/geoip: в правилах маршрутизации выше</string>
     <string name="geo_variant_runetfreedom_desc">Домены/IP, заблокированные в России (Роскомнадзор), обновляется каждые 6ч</string>
     <string name="geo_variant_v2fly">v2fly (официальный)</string>
@@ -716,7 +720,19 @@
     <string name="profiles_empty">Профилей пока нет</string>
 
     <string name="subscription_settings">Настройки подписки</string>
+    <string name="subscription_actions">Действия с подпиской</string>
+    <string name="subscription_pin">Закрепить наверху</string>
+    <string name="subscription_unpin">Открепить</string>
+    <string name="subscription_sort_by_ping">Сортировать по пингу</string>
+    <string name="subscription_collapse">Свернуть</string>
+    <string name="subscription_expand">Развернуть</string>
+    <string name="subscription_pinned">Закреплена</string>
+    <string name="subscriptions_collapse_all">Свернуть все подписки</string>
+    <string name="subscriptions_expand_all">Развернуть все подписки</string>
     <string name="subscription_updated_at">Обновлено %1$s</string>
+    <string name="subscription_test_ping">Проверить доступность</string>
+    <string name="subscription_test_ping_stop">Остановить проверку</string>
+    <string name="subscription_testing_ping">Проверка доступности…</string>
     <string name="subscription_info">Информация о подписке</string>
     <string name="auto_update">Автообновление</string>
     <string name="auto_update_only_if_selected">Только если выбрана</string>

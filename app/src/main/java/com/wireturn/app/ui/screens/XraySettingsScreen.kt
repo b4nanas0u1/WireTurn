@@ -53,6 +53,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -83,11 +84,13 @@ import com.wireturn.app.ui.SwitchRow
 import com.wireturn.app.ui.TextFieldRow
 import com.wireturn.app.ui.ValidatorUtils
 import com.wireturn.app.ui.StandardLeadingIcon
+import com.wireturn.app.ui.SliderRow
 import com.wireturn.app.ui.noFlingExpandConnection
 import com.wireturn.app.ui.redact
 import com.wireturn.app.viewmodel.GeoAssetsState
 import java.text.DateFormat
 import java.util.Date
+import kotlin.math.roundToInt
 
 @Composable
 fun XraySettingsScreen(
@@ -124,6 +127,7 @@ fun XraySettingsScreen(
     var dpiBypassArgs by remember { mutableStateOf(initialXraySettings.dpiBypassArgs) }
     var dpiBypassRoute by remember { mutableStateOf(initialXraySettings.dpiBypassRoute) }
     var dpiBypassPort by remember { mutableStateOf(initialXraySettings.dpiBypassPort) }
+    var pingConcurrency by remember { mutableIntStateOf(initialXraySettings.pingCheckConcurrency.coerceIn(1, XraySettings.MAX_PING_CHECK_CONCURRENCY)) }
 
     val showGeoDialog = remember { mutableStateOf(false) }
     val showGeoSourceEditor = remember { mutableStateOf(false) }
@@ -149,7 +153,7 @@ fun XraySettingsScreen(
 
     val currentXraySettings = remember(
         xraySocks, xrayHttp, xrayAuth, xrayUser, xrayPass,
-        dns, routeDirect, routeBlock, fakeDns, fragment, dpiBypass, dpiBypassArgs, dpiBypassRoute, dpiBypassPort, initialXraySettings
+        dns, routeDirect, routeBlock, fakeDns, fragment, dpiBypass, dpiBypassArgs, dpiBypassRoute, dpiBypassPort, pingConcurrency, initialXraySettings
     ) {
         initialXraySettings.copy(
             socksBindAddress = xraySocks,
@@ -165,7 +169,8 @@ fun XraySettingsScreen(
             dpiBypass = dpiBypass,
             dpiBypassArgs = dpiBypassArgs,
             dpiBypassRoute = dpiBypassRoute,
-            dpiBypassPort = dpiBypassPort
+            dpiBypassPort = dpiBypassPort,
+            pingCheckConcurrency = pingConcurrency
         )
     }
 
@@ -183,7 +188,8 @@ fun XraySettingsScreen(
         currentXraySettings.dpiBypass != initialXraySettings.dpiBypass ||
         currentXraySettings.dpiBypassArgs != initialXraySettings.dpiBypassArgs ||
         currentXraySettings.dpiBypassRoute != initialXraySettings.dpiBypassRoute ||
-        currentXraySettings.dpiBypassPort != initialXraySettings.dpiBypassPort
+        currentXraySettings.dpiBypassPort != initialXraySettings.dpiBypassPort ||
+        currentXraySettings.pingCheckConcurrency != initialXraySettings.pingCheckConcurrency
     }
 
     val showExitDialog = remember { mutableStateOf(false) }
@@ -515,6 +521,20 @@ fun XraySettingsScreen(
                             )
                         }
                     }
+                }
+            }
+
+            SectionGroup(title = stringResource(R.string.xray_settings_group_ping_check)) {
+                SectionItem(position = ItemPosition.Single) {
+                    SliderRow(
+                        label = stringResource(R.string.xray_settings_ping_concurrency_label),
+                        supportingText = stringResource(R.string.xray_settings_ping_concurrency_desc),
+                        value = pingConcurrency.toFloat(),
+                        onValueChange = { pingConcurrency = it.roundToInt() },
+                        valueRange = 1f..XraySettings.MAX_PING_CHECK_CONCURRENCY.toFloat(),
+                        steps = XraySettings.MAX_PING_CHECK_CONCURRENCY - 2,
+                        isModified = pingConcurrency != initialXraySettings.pingCheckConcurrency
+                    )
                 }
             }
 

@@ -15,7 +15,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.foundation.basicMarquee
@@ -92,6 +101,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -433,6 +443,10 @@ fun ProfileListItem(
     isDragged: Boolean = false,
     isHighlighted: Boolean = false,
     countryCode: String? = null,
+    // The last ping measured through this profile, shown at the end of the summary row.
+    pingMs: Long? = null,
+    // In a running ping check, waiting for its result - shown instead of the last one.
+    isPinging: Boolean = false,
     trailingContent: @Composable (() -> Unit)? = null,
     leadingContent: @Composable (() -> Unit)? = null
 ) {
@@ -503,33 +517,104 @@ fun ProfileListItem(
                     trailingContent()
                 }
             }
-            if (summary.extraTags.isNotEmpty()) {
+            if (summary.extraTags.isNotEmpty() || pingMs != null || isPinging) {
                 Spacer(Modifier.height(LabelGroupDefaults.SupportingGap))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = if (leadingContent != null) 52.dp else 0.dp)
-                        .basicMarquee(
-                            iterations = Int.MAX_VALUE,
-                            spacing = MarqueeSpacing.fractionOfContainer(1f / 6f)
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(start = if (leadingContent != null) 52.dp else 0.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    summary.extraTags.forEach { label ->
-                        ProfileTagChip(
-                            text = label,
-                            containerColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
-                            else MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
-                            else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                    // Only the tags scroll; the ping stays put at the end of the row.
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                spacing = MarqueeSpacing.fractionOfContainer(1f / 6f)
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        summary.extraTags.forEach { label ->
+                            ProfileTagChip(
+                                text = label,
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                                else MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                                else MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                    if (isPinging || pingMs != null) {
+                        // One fixed height for the text and the pending indicator (which is
+                        // shorter), so swapping one for the other doesn't move the row.
+                        val pingTextStyle = MaterialTheme.typography.labelMedium
+                        val pingSlotHeight = with(LocalDensity.current) { pingTextStyle.lineHeight.toDp() }
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .height(pingSlotHeight),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isPinging) {
+                                PingPendingIndicator()
+                            } else if (pingMs != null) {
+                                val pingFailed = pingMs == com.wireturn.app.domain.ProfileManager.PING_FAILED
+                                Text(
+                                    text = if (pingFailed) stringResource(R.string.ping_failed_short)
+                                        else stringResource(R.string.ping_ms, pingMs),
+                                    style = pingTextStyle,
+                                    // Same threshold as the home screen's live ping.
+                                    color = if (!pingFailed && pingMs < 1100) summaryColor else MaterialTheme.colorScheme.error,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/** A pulsing pill where the ping will be, like the home screen's while it waits for an answer. */
+@Composable
+private fun PingPendingIndicator(modifier: Modifier = Modifier) {
+    val pulseAlpha by rememberInfiniteTransition(label = "profile_ping_pulse").animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "profile_ping_pulse_alpha"
+    )
+    Box(
+        modifier = modifier
+            .size(width = 36.dp, height = 12.dp)
+            .graphicsLayer { alpha = pulseAlpha }
+            .background(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                shape = CircleShape
+            )
+    )
+}
+
+/**
+ * [list] by its last ping: the ones that answered, fastest first, then the never-measured ones,
+ * then the ones that failed. A profile still waiting in a running check ([pending]) counts as
+ * never measured - its old ping is about to be replaced, so the fresh results go above it. Its
+ * stored ping stays untouched, for a check that gets stopped. Stable - equal ones keep their order.
+ */
+private fun sortedByPing(list: List<Profile>, pings: Map<String, Long>, pending: Set<String>): List<Profile> =
+    list.sortedBy { profile ->
+        when (val ms = pings[profile.id]?.takeIf { profile.id !in pending }) {
+            null -> Long.MAX_VALUE - 1
+            com.wireturn.app.domain.ProfileManager.PING_FAILED -> Long.MAX_VALUE
+            else -> ms
+        }
+    }
 
 @Composable
 fun ProfilesDialog(
@@ -641,8 +726,19 @@ fun ProfilesDialog(
     // Grouping derived from `profiles`/`subscriptions` - derivedStateOf so it only recomputes when
     // those actually change, not on every recomposition of this dialog (e.g. drag auto-scroll frames).
     val standaloneProfiles by remember { derivedStateOf { profiles.filter { it.subscriptionId == null } } }
+    val profilePings by viewModel.profilePings.collectAsStateWithLifecycle()
+    val testingSubIds by viewModel.testingSubIds.collectAsStateWithLifecycle()
+    val pingingProfileIds by viewModel.pingingProfileIds.collectAsStateWithLifecycle()
+    // Pinned subscriptions first (sortedBy is stable: each part keeps its own order), and a
+    // subscription sorted by ping lists its profiles in that order - only here, on screen: the
+    // stored order stays the server's, so a refresh doesn't undo the sorting.
     val subscriptionGroups by remember {
-        derivedStateOf { subscriptions.map { sub -> sub to profiles.filter { it.subscriptionId == sub.id } } }
+        derivedStateOf {
+            subscriptions.sortedBy { !it.pinned }.map { sub ->
+                val own = profiles.filter { it.subscriptionId == sub.id }
+                sub to if (sub.sortMode == Subscription.SORT_PING) sortedByPing(own, profilePings, pingingProfileIds) else own
+            }
+        }
     }
     // Single source of truth for the visual order: standalone profiles as one implicit group
     // (null subscription), then each subscription's own group, in list order. findLazyIndex and
@@ -665,9 +761,10 @@ fun ProfilesDialog(
             } else {
                 if (sub.id == targetId) return runningIndex
                 val idx = groupProfiles.indexOfFirst { it.id == targetId }
-                if (idx != -1) return runningIndex + 1 + idx
+                // A collapsed subscription is its header alone - a profile in it lands there.
+                if (idx != -1) return if (sub.collapsed) runningIndex else runningIndex + 1 + idx
                 runningIndex += 1 // header
-                runningIndex += if (groupProfiles.isEmpty()) 1 else groupProfiles.size
+                if (!sub.collapsed) runningIndex += if (groupProfiles.isEmpty()) 1 else groupProfiles.size
             }
         }
         return -1
@@ -1208,6 +1305,22 @@ fun ProfilesDialog(
                                 )
                             }
                         } else {
+                            if (subscriptions.isNotEmpty()) {
+                                // Collapses them all while any is open, otherwise opens them all.
+                                val anyExpanded = subscriptions.any { !it.collapsed }
+                                FilledTonalIconButton(onClick = {
+                                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                    if (anyExpanded) scope.launch { lazyListState.scrollToItem(0) }
+                                    viewModel.setAllSubscriptionsCollapsed(anyExpanded)
+                                }) {
+                                    Icon(
+                                        painterResource(if (anyExpanded) R.drawable.unfold_less_24px else R.drawable.unfold_more_24px),
+                                        contentDescription = stringResource(
+                                            if (anyExpanded) R.string.subscriptions_collapse_all else R.string.subscriptions_expand_all
+                                        )
+                                    )
+                                }
+                            }
                             if (profiles.isNotEmpty()) {
                                 Box {
                                     FilledTonalIconButton(onClick = { onExportClick(profiles.map { it.id }, true) }) {
@@ -1295,6 +1408,13 @@ fun ProfilesDialog(
                                     longPress.position.y < item.offset + item.size
                             } ?: return@awaitEachGesture
                             val targetId = hitItem.key as String
+
+                            // A subscription sorted by ping shows its profiles in an order that
+                            // isn't the stored one the drag rearranges - no manual reorder there.
+                            val targetSubId = profiles.find { it.id == targetId }?.subscriptionId
+                            if (targetSubId != null &&
+                                subscriptions.find { it.id == targetSubId }?.sortMode == Subscription.SORT_PING
+                            ) return@awaitEachGesture
 
                             HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
                             draggedItemId = targetId
@@ -1446,11 +1566,43 @@ fun ProfilesDialog(
                                     }
                                     HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
                                 },
-                                isHighlighted = highlightedIds.contains(sub.id)
+                                isHighlighted = highlightedIds.contains(sub.id),
+                                onTogglePinned = {
+                                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                    viewModel.updateSubscriptionById(sub.id) { it.copy(pinned = !it.pinned) }
+                                },
+                                onToggleSortByPing = {
+                                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                    viewModel.updateSubscriptionById(sub.id) {
+                                        it.copy(sortMode = if (it.sortMode == Subscription.SORT_PING) Subscription.SORT_SERVER else Subscription.SORT_PING)
+                                    }
+                                },
+                                isTestingPings = sub.id in testingSubIds,
+                                onTestPings = if (subProfiles.none { it.kernelConfig is com.wireturn.app.data.KernelConfig.Xray }) null else {
+                                    {
+                                        HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                        if (sub.id in testingSubIds) viewModel.stopSubscriptionPingTest(sub.id)
+                                        else viewModel.testSubscriptionPings(sub.id)
+                                    }
+                                },
+                                onToggleCollapsed = {
+                                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                    // Collapsing from deep inside the subscription (its header stuck
+                                    // at the top, its real spot scrolled far above) would leave the
+                                    // list somewhere past it - bring the header back to the top.
+                                    // Its index doesn't depend on its own profiles, which follow it.
+                                    if (!sub.collapsed && headerIdx != -1 &&
+                                        lazyListState.firstVisibleItemIndex > headerIdx
+                                    ) {
+                                        scope.launch { lazyListState.animateScrollToItem(headerIdx) }
+                                    }
+                                    viewModel.updateSubscriptionById(sub.id) { it.copy(collapsed = !it.collapsed) }
+                                }
                             )
                         }
 
-                        itemsIndexed(subProfiles, key = { _, it -> it.id }) { index, profile ->
+                        // A collapsed subscription is its header alone (see findLazyIndex).
+                        if (!sub.collapsed) itemsIndexed(subProfiles, key = { _, it -> it.id }) { index, profile ->
                             ProfileItemRow(
                                 profile = profile,
                                 index = index,
@@ -1484,7 +1636,7 @@ fun ProfilesDialog(
                             )
                         }
 
-                        if (subProfiles.isEmpty()) {
+                        if (subProfiles.isEmpty() && !sub.collapsed) {
                             item(key = "sub_empty_${sub.id}") {
                                 SubscriptionEmptyRow()
                             }
@@ -1617,6 +1769,8 @@ private fun ProfileItemRow(
 ) {
     val isDragged = draggedItemId == profile.id
     val profileCountries by viewModel.profileCountries.collectAsStateWithLifecycle()
+    val profilePings by viewModel.profilePings.collectAsStateWithLifecycle()
+    val pingingProfileIds by viewModel.pingingProfileIds.collectAsStateWithLifecycle()
 
     val isDraggedState = rememberUpdatedState(isDragged)
     val onDragEndState = rememberUpdatedState(onDragEnd)
@@ -1658,6 +1812,8 @@ private fun ProfileItemRow(
         isSelected = isSelected,
         isHighlighted = highlightedIds.contains(profile.id),
         countryCode = profileCountries[profile.id],
+        pingMs = profilePings[profile.id],
+        isPinging = profile.id in pingingProfileIds,
         shape = itemShape,
         isDragged = isDragged,
         onClick = {
@@ -1724,6 +1880,19 @@ private fun ProfileItemRow(
                                 onClone(profile)
                             }
                         )
+                        // Only an Xray-only profile can be pinged without bringing a tunnel up.
+                        if (profile.kernelConfig is com.wireturn.app.data.KernelConfig.Xray) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.subscription_test_ping)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.wifi_24px), null, modifier = Modifier.size(20.dp)) },
+                                enabled = profile.id !in pingingProfileIds,
+                                onClick = {
+                                    menuExpanded = false
+                                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                                    viewModel.testProfilePing(profile.id)
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.profile_edit)) },
                             leadingIcon = { Icon(painterResource(R.drawable.edit_square_24px), null, modifier = Modifier.size(20.dp)) },
@@ -1839,7 +2008,13 @@ private fun SubscriptionHeaderRow(
     onSelect: () -> Unit,
     onToggleSelection: () -> Unit,
     modifier: Modifier = Modifier,
-    isHighlighted: Boolean = false
+    isHighlighted: Boolean = false,
+    onTogglePinned: () -> Unit = {},
+    onToggleSortByPing: () -> Unit = {},
+    onToggleCollapsed: () -> Unit = {},
+    // Null: nothing in it can be pinged on its own (no Xray-only profiles).
+    onTestPings: (() -> Unit)? = null,
+    isTestingPings: Boolean = false
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = when {
@@ -1857,7 +2032,13 @@ private fun SubscriptionHeaderRow(
     // below" look it has at its natural, unpinned position. Driven directly off stuckProgress -
     // no animate*AsState here - so it scrubs in lockstep with the scroll instead of playing its
     // own timed animation once some threshold is crossed.
-    val bottomCorner = lerp(4.dp, 16.dp, stuckProgress)
+    // Collapsed, nothing hangs below it - all four corners round, like a single item.
+    val restingBottomCorner by animateDpAsState(
+        targetValue = if (sub.collapsed) 16.dp else 4.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        label = "sub_header_bottom_corner"
+    )
+    val bottomCorner = lerp(restingBottomCorner, 16.dp, stuckProgress)
     val shadowElevation = lerp(0.dp, 6.dp, stuckProgress)
     // M3(E)'s own collapsing app bars shrink toward a smaller/compact bar on scroll (never grow),
     // and the standard "more compact" motion cue elsewhere in the system is a scale-down, not up
@@ -1879,7 +2060,8 @@ private fun SubscriptionHeaderRow(
             .padding(horizontal = stuckInset)
     ) {
         Row(
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
+            // The leading chevron button brings its own padding - less of the row's own before it.
+            modifier = Modifier.padding(start = if (isSelectionMode) 16.dp else 4.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isSelectionMode) {
@@ -1888,18 +2070,54 @@ private fun SubscriptionHeaderRow(
                     onCheckedChange = { onToggleSelection() },
                     modifier = Modifier.padding(end = 16.dp)
                 )
+            } else {
+                // A leading disclosure chevron: pointing right while collapsed, down while open.
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (sub.collapsed) -90f else 0f,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    label = "sub_chevron"
+                )
+                IconButton(onClick = onToggleCollapsed) {
+                    Icon(
+                        painter = painterResource(R.drawable.expand_more_24px),
+                        contentDescription = stringResource(if (sub.collapsed) R.string.subscription_expand else R.string.subscription_collapse),
+                        tint = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer { rotationZ = chevronRotation }
+                    )
+                }
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = sub.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    modifier = Modifier.basicMarquee()
-                )
-                // When the last successful refresh landed (0 = never refreshed yet).
-                if (sub.updatedAt > 0) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (sub.pinned) {
+                        Icon(
+                            painter = painterResource(R.drawable.keep_24px),
+                            contentDescription = stringResource(R.string.subscription_pinned),
+                            tint = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = sub.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
+                    )
+                }
+                if (isTestingPings) {
+                    Text(
+                        text = stringResource(R.string.subscription_testing_ping),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
+                        maxLines = 1
+                    )
+                } else if (sub.updatedAt > 0) {
+                    // When the last successful refresh landed (0 = never refreshed yet).
                     val context = LocalContext.current
                     val updatedAt = remember(sub.updatedAt) {
                         android.text.format.DateUtils.formatDateTime(
@@ -1927,14 +2145,7 @@ private fun SubscriptionHeaderRow(
                 }
             }
             if (!isSelectionMode) {
-                IconButton(onClick = onSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.settings_24px),
-                        contentDescription = stringResource(R.string.subscription_settings),
-                        tint = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                val iconTint = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
                 IconButton(onClick = onUpdate, enabled = !isUpdating) {
                     if (isUpdating) {
                         androidx.compose.material3.CircularProgressIndicator(
@@ -1948,11 +2159,70 @@ private fun SubscriptionHeaderRow(
                             painter = painterResource(R.drawable.refresh_24px),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = if (isAnyChildSelected) MaterialTheme.colorScheme.onSecondaryContainer
-                                    else MaterialTheme.colorScheme.onSurface
+                            tint = iconTint
                         )
                     }
                 }
+
+                var showMenu by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.more_vert_24px),
+                            contentDescription = stringResource(R.string.subscription_actions),
+                            tint = iconTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    AppDropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        title = stringResource(R.string.subscription_actions)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(if (sub.pinned) R.string.subscription_unpin else R.string.subscription_pin)) },
+                            onClick = { showMenu = false; onTogglePinned() },
+                            leadingIcon = {
+                                Icon(
+                                    painterResource(if (sub.pinned) R.drawable.keep_off_24px else R.drawable.keep_24px),
+                                    null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        )
+                        if (onTestPings != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(stringResource(if (isTestingPings) R.string.subscription_test_ping_stop else R.string.subscription_test_ping))
+                                },
+                                onClick = { showMenu = false; onTestPings() },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(if (isTestingPings) R.drawable.stop_24px else R.drawable.wifi_24px),
+                                        null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.subscription_sort_by_ping)) },
+                            onClick = { showMenu = false; onToggleSortByPing() },
+                            leadingIcon = { Icon(painterResource(R.drawable.sort_24px), null, modifier = Modifier.size(20.dp)) },
+                            trailingIcon = {
+                                if (sub.sortMode == Subscription.SORT_PING) {
+                                    Icon(painterResource(R.drawable.check_24px), null, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.subscription_settings)) },
+                            onClick = { showMenu = false; onSettings() },
+                            leadingIcon = { Icon(painterResource(R.drawable.settings_24px), null, modifier = Modifier.size(20.dp)) }
+                        )
+                    }
+                }
+
             }
         }
     }

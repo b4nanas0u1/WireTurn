@@ -221,6 +221,23 @@ class ProfileManager(
         scope.launch { prefs.saveProfileCountry(profileId, countryCode) }
     }
 
+    /**
+     * Last ping per profile id - see MainViewModel.checkProxyPing: milliseconds, or [PING_FAILED]
+     * when the tunnel was up but nothing got through it.
+     */
+    val profilePings: StateFlow<Map<String, Long>> = prefs.profilePingsFlow
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    fun saveProfilePing(profileId: String, ms: Long) {
+        scope.launch { prefs.saveProfilePing(profileId, ms) }
+    }
+
+    suspend fun saveProfilePings(pings: Map<String, Long>) = prefs.saveProfilePings(pings)
+
+    companion object {
+        const val PING_FAILED = -1L
+    }
+
     private val _updatingSubIds = MutableStateFlow<Set<String>>(emptySet())
     val updatingSubIds: StateFlow<Set<String>> = _updatingSubIds.asStateFlow()
 
@@ -777,7 +794,10 @@ class ProfileManager(
                                     ?: (bundle.updateIntervalMinutes ?: headerUpdateIntervalMinutes)?.coerceAtLeast(20)
                                     ?: 1440,
                                 onlyUpdateIfSelected = existingSub?.onlyUpdateIfSelected ?: false,
-                                requireTunnelForUpdate = existingSub?.requireTunnelForUpdate ?: false
+                                requireTunnelForUpdate = existingSub?.requireTunnelForUpdate ?: false,
+                                pinned = existingSub?.pinned ?: false,
+                                collapsed = existingSub?.collapsed ?: false,
+                                sortMode = existingSub?.sortMode ?: Subscription.SORT_SERVER
                             )
 
                             // 3. Save subscription info
@@ -869,6 +889,11 @@ class ProfileManager(
 
         // 4. Just first one ever
         return allProfiles.firstOrNull()
+    }
+
+    fun updateAllSubscriptions(transform: (Subscription) -> Subscription) {
+        val newSubs = subscriptions.value.map(transform)
+        if (newSubs != subscriptions.value) scope.launch { prefs.saveSubscriptions(newSubs) }
     }
 
     fun updateSubscription(sub: Subscription) {

@@ -82,6 +82,7 @@ class AppPreferences(val context: Context) {
         val PROFILES_JSON = stringPreferencesKey("profiles_json")
         val SUBSCRIPTIONS_JSON = stringPreferencesKey("subscriptions_json")
         val PROFILE_COUNTRIES_JSON = stringPreferencesKey("profile_countries_json")
+        val PROFILE_PINGS_JSON = stringPreferencesKey("profile_pings_json")
         val CURRENT_PROFILE_ID = stringPreferencesKey("current_profile_id")
         val DYNAMIC_THEME = booleanPreferencesKey("dynamic_theme")
         val THEME_MODE = stringPreferencesKey("theme_mode")
@@ -145,6 +146,7 @@ class AppPreferences(val context: Context) {
         val XRAY_DPI_BYPASS_ARGS = stringPreferencesKey("xray_dpi_bypass_args")
         val XRAY_DPI_BYPASS_ROUTE = stringPreferencesKey("xray_dpi_bypass_route")
         val XRAY_DPI_BYPASS_PORT = stringPreferencesKey("xray_dpi_bypass_port")
+        val XRAY_PING_CHECK_CONCURRENCY = intPreferencesKey("xray_ping_check_concurrency")
 
         val ACTIVE_KERNEL_JSON = stringPreferencesKey("active_kernel_json")
         val ACTIVE_XRAY_CONFIG_TYPE = stringPreferencesKey("active_xray_config_type")
@@ -242,7 +244,8 @@ class AppPreferences(val context: Context) {
         .distinctUntilChanged()
         .map { json ->
             try {
-                gson.fromJson<List<Subscription>>(json, object : TypeToken<List<Subscription>>() {}.type) ?: emptyList()
+                gson.fromJson<List<Subscription>>(json, object : TypeToken<List<Subscription>>() {}.type)
+                    ?.map { it.withDefaults() } ?: emptyList()
             } catch (_: Exception) {
                 emptyList()
             }
@@ -324,7 +327,8 @@ class AppPreferences(val context: Context) {
                 dpiBypass = p[XRAY_DPI_BYPASS] ?: false,
                 dpiBypassArgs = p[XRAY_DPI_BYPASS_ARGS] ?: com.wireturn.app.ByeDpi.DEFAULT_ARGS,
                 dpiBypassRoute = p[XRAY_DPI_BYPASS_ROUTE] ?: com.wireturn.app.ByeDpi.DEFAULT_ROUTE,
-                dpiBypassPort = p[XRAY_DPI_BYPASS_PORT] ?: ""
+                dpiBypassPort = p[XRAY_DPI_BYPASS_PORT] ?: "",
+                pingCheckConcurrency = p[XRAY_PING_CHECK_CONCURRENCY] ?: XraySettings.DEFAULT_PING_CHECK_CONCURRENCY
             )
         }.distinctUntilChanged()
 
@@ -469,6 +473,7 @@ class AppPreferences(val context: Context) {
         }
     }
 
+    /** Drops what was remembered about deleted profiles: their exit country and last ping. */
     suspend fun removeProfileCountries(profileIds: List<String>) {
         if (profileIds.isEmpty()) return
         appCtx.internalDataStore.edit { p ->
@@ -481,7 +486,33 @@ class AppPreferences(val context: Context) {
                 emptyMap()
             }
             p[PROFILE_COUNTRIES_JSON] = gson.toJson(current - profileIds.toSet())
+            p[PROFILE_PINGS_JSON] = gson.toJson(readProfilePings(p) - profileIds.toSet())
         }
+    }
+
+    /** Last successful ping (ms) per profile id, measured through the tunnel while it was active. */
+    val profilePingsFlow: Flow<Map<String, Long>> = appCtx.internalDataStore.data
+        .map { it[PROFILE_PINGS_JSON] ?: "{}" }
+        .distinctUntilChanged()
+        .map { json -> parseProfilePings(json) }
+        .distinctUntilChanged().flowOn(Dispatchers.Default)
+
+    suspend fun saveProfilePing(profileId: String, ms: Long) = saveProfilePings(mapOf(profileId to ms))
+
+    /** Several at once - a whole subscription's check is one write, not one per profile. */
+    suspend fun saveProfilePings(pings: Map<String, Long>) {
+        if (pings.isEmpty()) return
+        appCtx.internalDataStore.edit { p ->
+            p[PROFILE_PINGS_JSON] = gson.toJson(readProfilePings(p) + pings)
+        }
+    }
+
+    private fun readProfilePings(p: Preferences): Map<String, Long> = parseProfilePings(p[PROFILE_PINGS_JSON] ?: "{}")
+
+    private fun parseProfilePings(json: String): Map<String, Long> = try {
+        gson.fromJson<Map<String, Long>>(json, object : TypeToken<Map<String, Long>>() {}.type) ?: emptyMap()
+    } catch (_: Exception) {
+        emptyMap()
     }
 
     /** Geo resource sources the user added themselves, listed after the built-in ones. */
@@ -609,6 +640,7 @@ class AppPreferences(val context: Context) {
             it[XRAY_DPI_BYPASS_ARGS] = s.dpiBypassArgs
             it[XRAY_DPI_BYPASS_ROUTE] = s.dpiBypassRoute
             it[XRAY_DPI_BYPASS_PORT] = s.dpiBypassPort
+            it[XRAY_PING_CHECK_CONCURRENCY] = s.pingCheckConcurrency
         }
     }
 
