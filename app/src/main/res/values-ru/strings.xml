@@ -665,6 +665,16 @@
     <string name="geo_resources_delete_confirm_desc">Удалит скачанные geoip.dat/geosite.dat. Записи geosite:/geoip: в маршрутизации перестанут работать, пока не скачаете их заново.</string>
     <string name="geo_resources_updated_at">Обновлено %1$s</string>
     <string name="geo_resources_not_downloaded">Не скачано</string>
+    <string name="geo_source_add">Добавить источник</string>
+    <string name="geo_source_edit">Изменить источник</string>
+    <string name="geo_source_delete">Удалить источник</string>
+    <string name="geo_source_name_label">Название</string>
+    <string name="geo_source_name_desc">Необязательно, иначе — хост ссылки на geosite.dat</string>
+    <string name="geo_source_geoip_label">URL geoip.dat</string>
+    <string name="geo_source_geosite_label">URL geosite.dat</string>
+    <string name="geo_source_url_desc">Прямая http(s)-ссылка на файл</string>
+    <string name="geo_source_custom_desc">Свой источник</string>
+    <string name="geo_source_removed">Удалённый источник</string>
     <string name="connection_details">Детали подключения</string>
     <string name="server_settings_title">Настройки сервера</string>
 

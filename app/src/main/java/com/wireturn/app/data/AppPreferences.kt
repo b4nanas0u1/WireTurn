@@ -140,6 +140,7 @@ class AppPreferences(val context: Context) {
         val XRAY_FAKEDNS = booleanPreferencesKey("xray_fakedns")
         val XRAY_FRAGMENT = booleanPreferencesKey("xray_fragment")
         val XRAY_GEO_VARIANT = stringPreferencesKey("xray_geo_variant")
+        val CUSTOM_GEO_SOURCES_JSON = stringPreferencesKey("custom_geo_sources_json")
         val XRAY_DPI_BYPASS = booleanPreferencesKey("xray_dpi_bypass")
         val XRAY_DPI_BYPASS_ARGS = stringPreferencesKey("xray_dpi_bypass_args")
         val XRAY_DPI_BYPASS_ROUTE = stringPreferencesKey("xray_dpi_bypass_route")
@@ -481,6 +482,24 @@ class AppPreferences(val context: Context) {
             }
             p[PROFILE_COUNTRIES_JSON] = gson.toJson(current - profileIds.toSet())
         }
+    }
+
+    /** Geo resource sources the user added themselves, listed after the built-in ones. */
+    val customGeoSourcesFlow: Flow<List<com.wireturn.app.domain.GeoResourceSet>> = appCtx.internalDataStore.data
+        .map { it[CUSTOM_GEO_SOURCES_JSON] ?: "[]" }
+        .distinctUntilChanged()
+        .map { json ->
+            try {
+                gson.fromJson<List<com.wireturn.app.domain.GeoResourceSet>>(
+                    json, object : TypeToken<List<com.wireturn.app.domain.GeoResourceSet>>() {}.type
+                )?.filter { it.isCustom && it.geoipUrl.isNotBlank() && it.geositeUrl.isNotBlank() } ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+
+    suspend fun saveCustomGeoSources(list: List<com.wireturn.app.domain.GeoResourceSet>) {
+        appCtx.internalDataStore.edit { it[CUSTOM_GEO_SOURCES_JSON] = gson.toJson(list) }
     }
 
     // The Xray link history is gone (Xray-only profiles took its place) - its stored links,

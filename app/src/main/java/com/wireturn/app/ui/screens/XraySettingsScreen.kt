@@ -33,6 +33,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -77,6 +82,7 @@ import com.wireturn.app.ui.SupportingText
 import com.wireturn.app.ui.SwitchRow
 import com.wireturn.app.ui.TextFieldRow
 import com.wireturn.app.ui.ValidatorUtils
+import com.wireturn.app.ui.StandardLeadingIcon
 import com.wireturn.app.ui.noFlingExpandConnection
 import com.wireturn.app.ui.redact
 import com.wireturn.app.viewmodel.GeoAssetsState
@@ -96,7 +102,10 @@ fun XraySettingsScreen(
     geoAssetsInstalledAt: Long = 0L,
     onDownloadGeoAssets: (GeoResourceSet) -> Unit = {},
     onCancelGeoAssetsDownload: () -> Unit = {},
-    onDeleteGeoAssets: () -> Unit = {}
+    onDeleteGeoAssets: () -> Unit = {},
+    customGeoSources: List<GeoResourceSet> = emptyList(),
+    onSaveCustomGeoSource: (GeoResourceSet) -> Unit = {},
+    onDeleteCustomGeoSource: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -117,14 +126,18 @@ fun XraySettingsScreen(
     var dpiBypassPort by remember { mutableStateOf(initialXraySettings.dpiBypassPort) }
 
     val showGeoDialog = remember { mutableStateOf(false) }
+    val showGeoSourceEditor = remember { mutableStateOf(false) }
+    // Null while adding a new source.
+    val editedGeoSource = remember { mutableStateOf<GeoResourceSet?>(null) }
     val showDeleteGeoConfirm = remember { mutableStateOf(false) }
 
-    val installedVariant = GeoResourceSet.fromId(initialXraySettings.geoVariant)
+    // Null: a custom source that was removed from the list after its files were downloaded.
+    val installedVariant = GeoResourceSet.find(initialXraySettings.geoVariant, customGeoSources)
     // While a download is in flight, reflect its target rather than the (possibly stale, or
     // just-deleted) previously installed variant - otherwise the label lies about what's
     // actually happening (e.g. still saying "v2fly" while RunetFreedom is being fetched).
     val displayedVariant = (geoAssetsState as? GeoAssetsState.Downloading)?.variant ?: installedVariant
-    val installedVariantLabel = stringResource(geoVariantLabelRes(displayedVariant))
+    val installedVariantLabel = geoVariantLabel(displayedVariant)
     val geoDateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     val geoStatusText = when {
         geoAssetsState is GeoAssetsState.Downloading -> stringResource(R.string.geo_resources_downloading)
@@ -550,7 +563,22 @@ fun XraySettingsScreen(
             onDownload = onDownloadGeoAssets,
             onCancelDownload = onCancelGeoAssetsDownload,
             onRequestDelete = { showDeleteGeoConfirm.value = true },
-            onDismiss = { showGeoDialog.value = false }
+            onDismiss = { showGeoDialog.value = false },
+            customSources = customGeoSources,
+            onAddSource = { editedGeoSource.value = null; showGeoSourceEditor.value = true },
+            onEditSource = { editedGeoSource.value = it; showGeoSourceEditor.value = true },
+            onDeleteSource = onDeleteCustomGeoSource
+        )
+    }
+
+    if (showGeoSourceEditor.value) {
+        GeoSourceEditDialog(
+            source = editedGeoSource.value,
+            onSave = {
+                onSaveCustomGeoSource(it)
+                showGeoSourceEditor.value = false
+            },
+            onDismiss = { showGeoSourceEditor.value = false }
         )
     }
 
@@ -580,7 +608,7 @@ fun XraySettingsScreen(
 
 @Composable
 private fun GeoResourcesDialog(
-    selected: GeoResourceSet,
+    selected: GeoResourceSet?,
     state: GeoAssetsState,
     progress: Int,
     installed: Boolean,
@@ -588,27 +616,63 @@ private fun GeoResourcesDialog(
     onDownload: (GeoResourceSet) -> Unit,
     onCancelDownload: () -> Unit,
     onRequestDelete: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    customSources: List<GeoResourceSet>,
+    onAddSource: () -> Unit,
+    onEditSource: (GeoResourceSet) -> Unit,
+    onDeleteSource: (String) -> Unit
 ) {
     val context = LocalContext.current
-    var pending by remember { mutableStateOf((state as? GeoAssetsState.Downloading)?.variant ?: selected) }
+    // Ids, not objects: an edited custom source is a new object with the same id.
+    var pendingId by remember { mutableStateOf(((state as? GeoAssetsState.Downloading)?.variant ?: selected)?.id) }
+    val items = GeoResourceSet.BUILT_IN + customSources
+    val pending = items.find { it.id == pendingId }
     val isDownloading = state is GeoAssetsState.Downloading
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
 
     SelectionDialog(
         title = stringResource(R.string.xray_settings_group_geo),
         description = stringResource(R.string.geo_resources_dialog_desc),
-        items = GeoResourceSet.entries,
-        isSelected = { it == pending },
-        onSelect = { if (!isDownloading) pending = it },
+        items = items,
+        isSelected = { it.id == pendingId },
+        onSelect = { if (!isDownloading) pendingId = it.id },
         onDismiss = onDismiss,
         dismissOnSelect = false,
         footer = {
+            Surface(
+                onClick = {
+                    HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
+                    onAddSource()
+                },
+                enabled = !isDownloading,
+                shape = MaterialTheme.shapes.extraLarge,
+                color = Color.Transparent,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StandardLeadingIcon {
+                        Icon(
+                            painter = painterResource(R.drawable.add_24px),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.geo_source_add),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+
             Column(modifier = Modifier.padding(top = 8.dp, start = 4.dp, end = 4.dp)) {
                 val statusText = when {
                     isDownloading -> stringResource(R.string.geo_resources_downloading)
                     state is GeoAssetsState.Error -> stringResource(R.string.geo_resources_download_failed, state.message)
-                    installed && pending == selected -> stringResource(
+                    installed && pendingId != null && pendingId == selected?.id -> stringResource(
                         R.string.geo_resources_updated_at,
                         dateFormat.format(Date(installedAt))
                     )
@@ -658,8 +722,9 @@ private fun GeoResourcesDialog(
                             FilledTonalIconButton(
                                 onClick = {
                                     HapticUtil.perform(context, HapticUtil.Pattern.CLICK)
-                                    onDownload(pending)
+                                    pending?.let(onDownload)
                                 },
+                                enabled = pending != null,
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 Icon(
@@ -697,24 +762,141 @@ private fun GeoResourcesDialog(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = stringResource(geoVariantLabelRes(variant)))
+                Text(text = geoVariantLabel(variant))
                 SupportingText(
-                    text = stringResource(geoVariantDescRes(variant)),
+                    text = geoVariantDescription(variant),
                     color = LocalContentColor.current.copy(alpha = 0.75f)
                 )
+            }
+            if (variant.isCustom) {
+                var showMenu by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { showMenu = true }, enabled = !isDownloading) {
+                        Icon(
+                            painter = painterResource(R.drawable.more_vert_24px),
+                            contentDescription = stringResource(R.string.profile_actions)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.geo_source_edit)) },
+                            onClick = { showMenu = false; onEditSource(variant) },
+                            leadingIcon = { Icon(painterResource(R.drawable.edit_24px), null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.geo_source_delete)) },
+                            onClick = {
+                                showMenu = false
+                                if (pendingId == variant.id) pendingId = selected?.id
+                                onDeleteSource(variant.id)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painterResource(R.drawable.delete_24px),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-private fun geoVariantLabelRes(variant: GeoResourceSet): Int = when (variant) {
-    GeoResourceSet.RUNETFREEDOM -> R.string.geo_variant_runetfreedom
-    GeoResourceSet.LOYALSOLDIER -> R.string.geo_variant_loyalsoldier
-    GeoResourceSet.V2FLY -> R.string.geo_variant_v2fly
+/** Null: a custom source removed from the list after its files were installed. */
+@Composable
+private fun geoVariantLabel(variant: GeoResourceSet?): String = when {
+    variant == null -> stringResource(R.string.geo_source_removed)
+    variant.isCustom -> variant.displayName
+    else -> stringResource(
+        when (variant.id) {
+            GeoResourceSet.LOYALSOLDIER.id -> R.string.geo_variant_loyalsoldier
+            GeoResourceSet.V2FLY.id -> R.string.geo_variant_v2fly
+            else -> R.string.geo_variant_runetfreedom
+        }
+    )
 }
 
-private fun geoVariantDescRes(variant: GeoResourceSet): Int = when (variant) {
-    GeoResourceSet.RUNETFREEDOM -> R.string.geo_variant_runetfreedom_desc
-    GeoResourceSet.LOYALSOLDIER -> R.string.geo_variant_loyalsoldier_desc
-    GeoResourceSet.V2FLY -> R.string.geo_variant_v2fly_desc
+@Composable
+private fun geoVariantDescription(variant: GeoResourceSet): String =
+    if (variant.isCustom) stringResource(R.string.geo_source_custom_desc)
+    else stringResource(
+        when (variant.id) {
+            GeoResourceSet.LOYALSOLDIER.id -> R.string.geo_variant_loyalsoldier_desc
+            GeoResourceSet.V2FLY.id -> R.string.geo_variant_v2fly_desc
+            else -> R.string.geo_variant_runetfreedom_desc
+        }
+    )
+
+@Composable
+private fun GeoSourceEditDialog(
+    source: GeoResourceSet?,
+    onSave: (GeoResourceSet) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(source?.name ?: "") }
+    var geoipUrl by remember { mutableStateOf(source?.geoipUrl ?: "") }
+    var geositeUrl by remember { mutableStateOf(source?.geositeUrl ?: "") }
+    val geoipValid = ValidatorUtils.isValidUrl(geoipUrl.trim())
+    val geositeValid = ValidatorUtils.isValidUrl(geositeUrl.trim())
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (source == null) R.string.geo_source_add else R.string.geo_source_edit)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.geo_source_name_label)) },
+                    supportingText = { Text(stringResource(R.string.geo_source_name_desc)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = geoipUrl,
+                    onValueChange = { geoipUrl = it },
+                    label = { Text(stringResource(R.string.geo_source_geoip_label)) },
+                    supportingText = { Text(stringResource(R.string.geo_source_url_desc)) },
+                    isError = geoipUrl.isNotBlank() && !geoipValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = geositeUrl,
+                    onValueChange = { geositeUrl = it },
+                    label = { Text(stringResource(R.string.geo_source_geosite_label)) },
+                    supportingText = { Text(stringResource(R.string.geo_source_url_desc)) },
+                    isError = geositeUrl.isNotBlank() && !geositeValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(
+                        source?.copy(name = name.trim(), geoipUrl = geoipUrl.trim(), geositeUrl = geositeUrl.trim())
+                            ?: GeoResourceSet.custom(name, geoipUrl, geositeUrl)
+                    )
+                },
+                enabled = geoipValid && geositeValid
+            ) {
+                Text(stringResource(R.string.btn_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

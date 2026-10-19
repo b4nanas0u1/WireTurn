@@ -34,6 +34,7 @@ class XraySettingsActivity : ComponentActivity() {
             val geoAssetsState by viewModel.geoAssetsState.collectAsStateWithLifecycle()
             val geoAssetsProgress by viewModel.geoAssetsProgress.collectAsStateWithLifecycle()
             val geoAssetsInstalledTick by viewModel.geoAssetsInstalledTick.collectAsStateWithLifecycle()
+            val customGeoSources by viewModel.customGeoSources.collectAsStateWithLifecycle()
             // Reading the tick alone doesn't help unless something derived from it is actually
             // captured by the WireturnTheme content lambda below - otherwise Compose sees that
             // lambda's captures as unchanged and skips re-invoking it, so geoAssetsInstalled()/
@@ -52,6 +53,9 @@ class XraySettingsActivity : ComponentActivity() {
                     onDownloadGeoAssets = { viewModel.downloadGeoAssets(it) },
                     onCancelGeoAssetsDownload = { viewModel.cancelGeoAssetsDownload() },
                     onDeleteGeoAssets = { viewModel.deleteGeoAssets() },
+                    customGeoSources = customGeoSources,
+                    onSaveCustomGeoSource = { viewModel.saveCustomGeoSource(it) },
+                    onDeleteCustomGeoSource = { viewModel.deleteCustomGeoSource(it) },
                     onBack = { finish() },
                     onSave = { xray ->
                         viewModel.updateXraySettings(xray)

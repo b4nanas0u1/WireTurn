@@ -706,6 +706,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    val customGeoSources: StateFlow<List<com.wireturn.app.domain.GeoResourceSet>> = prefs.customGeoSourcesFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Adds [source], or replaces the custom source with its id. */
+    fun saveCustomGeoSource(source: com.wireturn.app.domain.GeoResourceSet) {
+        val current = customGeoSources.value
+        val updated = if (current.any { it.id == source.id }) current.map { if (it.id == source.id) source else it }
+            else current + source
+        viewModelScope.launch { prefs.saveCustomGeoSources(updated) }
+    }
+
+    /** Only removes it from the list: files already downloaded from it stay installed. */
+    fun deleteCustomGeoSource(id: String) {
+        viewModelScope.launch { prefs.saveCustomGeoSources(customGeoSources.value.filter { it.id != id }) }
+    }
+
     fun cancelGeoAssetsDownload() = geoAssetsManager.cancelDownload()
 
     fun deleteGeoAssets() {

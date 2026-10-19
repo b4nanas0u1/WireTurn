@@ -39,6 +39,7 @@
 -keep class com.wireturn.app.data.VpnSettings { *; }
 -keep class com.wireturn.app.data.AutoLaunchSettings { *; }
 -keep class com.wireturn.app.data.KernelSnapshot { *; }
+-keep class com.wireturn.app.domain.GeoResourceSet { *; }
 
 # Keep enums and their members for GSON and reflection (valueOf)
 -keep enum com.wireturn.app.data.** { *; }

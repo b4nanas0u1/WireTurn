@@ -1,6 +1,7 @@
 package com.wireturn.app.domain
 
 import android.content.Context
+import com.google.gson.annotations.SerializedName
 import com.wireturn.app.AppLogsState
 import com.wireturn.app.viewmodel.GeoAssetsState
 import kotlinx.coroutines.Dispatchers
@@ -16,32 +17,57 @@ import java.net.HttpURLConnection
 import java.net.Proxy
 import java.net.URL
 
-/** geoip.dat/geosite.dat variants offered to the user, mirroring what v2ray-family clients (v2rayNG etc.) ship. */
-enum class GeoResourceSet(
-    val id: String,
-    val geoipUrl: String,
-    val geositeUrl: String
+/**
+ * A geoip.dat/geosite.dat source: one of the built-in ones, mirroring what v2ray-family clients
+ * (v2rayNG etc.) ship, or one the user added ([isCustom], with a [name] of their own) - kept in
+ * AppPreferences and listed after the built-in ones.
+ */
+data class GeoResourceSet(
+    @SerializedName("id") val id: String,
+    @SerializedName("geoip_url") val geoipUrl: String,
+    @SerializedName("geosite_url") val geositeUrl: String,
+    @SerializedName("name") val name: String = ""
 ) {
-    // Default: RU-focused ruleset (blocked-by-Roskomnadzor domains/IPs), most relevant for
-    // this app's typical audience - see runetfreedom/russia-v2ray-rules-dat.
-    RUNETFREEDOM(
-        id = "runetfreedom",
-        geoipUrl = "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat",
-        geositeUrl = "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"
-    ),
-    V2FLY(
-        id = "v2fly",
-        geoipUrl = "https://github.com/v2fly/geoip/releases/latest/download/geoip.dat",
-        geositeUrl = "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
-    ),
-    LOYALSOLDIER(
-        id = "loyalsoldier",
-        geoipUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
-        geositeUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
-    );
+    val isCustom: Boolean get() = id.startsWith(CUSTOM_PREFIX)
+
+    /** The name to show for a custom source: its own, or the host it downloads geosite.dat from. */
+    val displayName: String
+        get() = name.ifBlank { runCatching { URL(geositeUrl).host }.getOrNull().orEmpty().ifBlank { geositeUrl } }
 
     companion object {
-        fun fromId(id: String): GeoResourceSet = entries.find { it.id == id } ?: RUNETFREEDOM
+        const val CUSTOM_PREFIX = "custom:"
+
+        // Default: RU-focused ruleset (blocked-by-Roskomnadzor domains/IPs), most relevant for
+        // this app's typical audience - see runetfreedom/russia-v2ray-rules-dat.
+        val RUNETFREEDOM = GeoResourceSet(
+            id = "runetfreedom",
+            geoipUrl = "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat",
+            geositeUrl = "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"
+        )
+        val V2FLY = GeoResourceSet(
+            id = "v2fly",
+            geoipUrl = "https://github.com/v2fly/geoip/releases/latest/download/geoip.dat",
+            geositeUrl = "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
+        )
+        val LOYALSOLDIER = GeoResourceSet(
+            id = "loyalsoldier",
+            geoipUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+            geositeUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+        )
+
+        val BUILT_IN = listOf(RUNETFREEDOM, V2FLY, LOYALSOLDIER)
+
+        /** A new custom source with a fresh id. */
+        fun custom(name: String, geoipUrl: String, geositeUrl: String) = GeoResourceSet(
+            id = CUSTOM_PREFIX + java.util.UUID.randomUUID().toString(),
+            geoipUrl = geoipUrl.trim(),
+            geositeUrl = geositeUrl.trim(),
+            name = name.trim()
+        )
+
+        /** The source with [id], or null - a custom one that was removed since it was installed. */
+        fun find(id: String, custom: List<GeoResourceSet>): GeoResourceSet? =
+            (BUILT_IN + custom).find { it.id == id } ?: RUNETFREEDOM.takeIf { !id.startsWith(CUSTOM_PREFIX) }
     }
 }
 

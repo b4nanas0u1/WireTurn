@@ -740,6 +740,16 @@
     <string name="geo_resources_delete_confirm_desc">Removes the downloaded geoip.dat/geosite.dat. geosite:/geoip: routing entries will stop working until you download them again.</string>
     <string name="geo_resources_updated_at">Updated %1$s</string>
     <string name="geo_resources_not_downloaded">Not downloaded</string>
+    <string name="geo_source_add">Add source</string>
+    <string name="geo_source_edit">Edit source</string>
+    <string name="geo_source_delete">Delete source</string>
+    <string name="geo_source_name_label">Name</string>
+    <string name="geo_source_name_desc">Optional, the host of the geosite.dat link otherwise</string>
+    <string name="geo_source_geoip_label">geoip.dat URL</string>
+    <string name="geo_source_geosite_label">geosite.dat URL</string>
+    <string name="geo_source_url_desc">Direct http(s) link to the file</string>
+    <string name="geo_source_custom_desc">Your own source</string>
+    <string name="geo_source_removed">Removed source</string>
     <string name="connection_details">Connection details</string>
     <string name="server_settings_title">Server settings</string>
     <string name="math_minus" translatable="false">−</string>
