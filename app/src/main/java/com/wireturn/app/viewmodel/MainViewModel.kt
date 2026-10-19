@@ -181,7 +181,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val profilePings: StateFlow<Map<String, Long>> = profileManager.profilePings
 
     private val xrayLinkTester = com.wireturn.app.domain.XrayLinkTester(application)
-    private val pingTestJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+    private val pingTestJobs = mutableMapOf<String, Job>()
     private val _testingSubIds = MutableStateFlow<Set<String>>(emptySet())
     /** Subscriptions whose Xray profiles are being pinged right now - see [testSubscriptionPings]. */
     val testingSubIds: StateFlow<Set<String>> = _testingSubIds.asStateFlow()

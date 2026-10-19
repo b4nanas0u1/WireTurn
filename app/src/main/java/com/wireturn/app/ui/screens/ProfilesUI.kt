@@ -626,7 +626,7 @@ fun ProfilesDialog(
     val updatingSubIds by viewModel.updatingSubIds.collectAsStateWithLifecycle()
     val currentId by viewModel.currentProfileId.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val density = androidx.compose.ui.platform.LocalDensity.current
+    val density = LocalDensity.current
 
     // Distance (in px) over which a subscription header morphs into its stuck appearance -
     // scrubbed directly by scroll position rather than snapping once fully pinned. Kept fairly
@@ -2298,7 +2298,7 @@ private fun SubscriptionDescriptionText(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(with(androidx.compose.ui.platform.LocalDensity.current) { heightPx.toDp() })
+                    .height(with(LocalDensity.current) { heightPx.toDp() })
                     .clipToBounds()
             ) {
                 Text(text = text, style = style, color = color, maxLines = Int.MAX_VALUE)

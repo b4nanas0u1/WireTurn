@@ -358,12 +358,10 @@ fun HomeScreen(
                     isIgnoringBatteryOptimizations =
                         pm.isIgnoringBatteryOptimizations(context.packageName)
                     hasNotificationPermission =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                "android.permission.POST_NOTIFICATIONS"
-                            ) == PackageManager.PERMISSION_GRANTED
-                        } else true
+                        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
+                            context,
+                            "android.permission.POST_NOTIFICATIONS"
+                        ) == PackageManager.PERMISSION_GRANTED
                     if (XrayServiceState.state.value == XrayState.Running) {
                         viewModel.checkProxyPing()
                     }
